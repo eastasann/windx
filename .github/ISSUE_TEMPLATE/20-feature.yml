@@ -1,0 +1,58 @@
+name: "Feature（機能・改善）"
+description: "新機能や機能改善の提案"
+title: "[Feat] "
+labels: ["type/feature", "stage/g0-problem"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        設計の合意が必要な規模なら、代わりに **Design Doc** テンプレートを使ってください。
+        判断基準: [`CLAUDE.md`](https://github.com/eastasann/windx/blob/main/CLAUDE.md#design-doc-が必要かの判定)
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解くべき問題
+      description: "**解決策ではなく問題**を書いてください。誰が、どういう場面で、何に困っているか。"
+      placeholder: |
+        （悪い例）検索にフィルタを追加したい
+        （良い例）検索結果が 200 件返るため、利用者が目的の項目を見つけるまでに平均 4 回スクロールしている
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 解けたらどうなるか
+      description: 成功の状態を観測可能な形で。
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ条件
+      description: |
+        Given / When / Then と**検証手段**をセットで書きます。検証手段が書けない項目は受け入れ条件ではありません。
+      value: |
+        - **AC-1**: Given <前提>, When <操作>, Then <期待結果>
+          - 検証: `<コマンド>`
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: やらないこと（Non-Goals）
+      description: AI のスコープ境界として機能します。空にしないでください。
+    validations:
+      required: true
+
+  - type: input
+    id: design-doc
+    attributes:
+      label: Design doc
+      description: 関連する DD があれば ID を記入（例 `DD-0004`）。なければ空欄。
+      placeholder: "DD-0004"
+    validations:
+      required: false

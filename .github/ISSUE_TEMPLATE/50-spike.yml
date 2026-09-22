@@ -1,0 +1,49 @@
+name: "Spike（時間を区切った調査）"
+description: "判断に必要な情報を得るための調査。成果物は必ず文書です"
+title: "[Spike] "
+labels: ["type/spike", "stage/g1-design"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Spike は**調査であって実装ではありません**。時間を区切り、成果物を文書として残します。
+        調査の結果、実装が必要になったら別 Issue を起こしてください。
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 答えを出したい問い
+      description: "**判断に必要な問い**を具体的に。「調べる」ではなく「〜かどうかを判定する」の形で。"
+      placeholder: |
+        （悪い例）Redis について調べる
+        （良い例）既存 Redis クラスタで想定ピーク 1,200 req/s のセッション書き込みを捌けるか
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: この答えが何の判断に使われるか
+      description: 関連する Decision Point があれば `DD-xxxx DP-n` の形で。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: timebox
+    attributes:
+      label: タイムボックス
+      description: これを超えたら、分かったところまでで打ち切って報告します。
+      options: ["2 時間", "半日", "1 日", "2 日"]
+    validations:
+      required: true
+
+  - type: textarea
+    id: deliverable
+    attributes:
+      label: 成果物
+      description: どこに何を残すか。**口頭報告は成果物ではありません。**
+      value: |
+        - [ ] この Issue のコメントに調査結果
+        - [ ] 関連 DD の Appendix に計測データを追記
+    validations:
+      required: true
