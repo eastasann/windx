@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 結論が出ていない相談・アイデア
+    url: https://github.com/eastasann/windx/discussions
+    about: まだ「やるかどうか」が決まっていない話は Discussions へ。結論が出たら Issue か ADR に落とします。
+  - name: プロセスの読み方
+    url: https://github.com/eastasann/windx/blob/main/docs/process/README.md
+    about: どのテンプレートを使うか迷ったら、まずプロセス標準を読んでください。

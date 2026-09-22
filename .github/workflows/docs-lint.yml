@@ -1,0 +1,32 @@
+name: docs-lint
+
+# design doc / ADR / ラベル定義の構造を検証する。
+# 規約: docs/process/03-design-doc.md, docs/process/08-adr.md
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: doc の構造検証
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: design doc / ADR を検証
+        run: python3 scripts/validate_docs.py
+
+      - name: ラベル定義を検証
+        run: python3 scripts/sync_labels.py --dry-run
+
+      - name: プロセス文書のリンク切れを検出
+        run: python3 scripts/check_links.py
