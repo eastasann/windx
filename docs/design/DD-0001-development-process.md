@@ -1,372 +1,446 @@
 ---
 id: DD-0001
-title: "AI 駆動開発プロセスの標準化"
+title: "Standardise the AI-driven development process"
 type: design-doc
-status: in-review
+status: approved
 owner: "@eastasann"
-reviewers: []
+reviewers: ["@eastasann"]
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-10-01
 tracking_issue: null
-related_adrs: ["ADR-0001", "ADR-0002", "ADR-0003"]
+related_adrs: ["ADR-0001", "ADR-0002", "ADR-0003", "ADR-0004"]
 supersedes: []
 superseded_by: null
 ---
 
 <!--
-この doc は、本リポジトリの開発プロセスそのものを定義する design doc であり、
-同時に「本プロセスに従って書かれた design doc」の実例でもある（ドッグフーディング）。
-Decision Points は実際に未決であり、Owner の回答を待っている。
+This doc defines the development process of this repository, and is simultaneously an
+example of a design doc written under that process (dogfooding).
 -->
 
 ## Summary
 
-Google の design docs 文化を AI 駆動開発に適合させ、チケット管理・ロードマップ・
-意思決定記録を含む開発プロセス全体を GitHub 上で完結させる。人間の関与を
-「ゲートでの判断」に限定し、調査・執筆・実装・検証は AI エージェントが実行する。
+Adapt Google's design docs culture to AI-driven development, and keep the whole process —
+issue tracking, roadmap, and decision records included — inside GitHub. Human involvement is
+confined to deciding at gates; research, writing, implementation, and verification are
+executed by AI agents.
 
 ## Context
 
-Google の design doc 文化が機能していた理由は 2 つある。**書くことによる思考**
-（散文で書くと曖昧な設計は書けない）と、**レビューによる合意**（実装前の、まだ安い
-段階で反対意見を受け取る）である。どちらも、設計文書の執筆に相応の時間がかかり、
-かつ実装がさらに高価である、という前提の上に成り立っていた。
+Google's design doc culture worked for two reasons. **Thinking by writing** — vague designs
+cannot survive prose — and **agreement through review**, where objections arrive while they
+are still cheap. Both rested on the same premise: writing a design took real time, and
+implementing it cost more still.
 
-AI エージェントが実装の主体になると、この前提が崩れる。文書の執筆コストは数日から
-数分になり、実装コストも大幅に下がる。結果として、ボトルネックは「書くこと」と
-「作ること」から、「**判断すること**」と「**検証すること**」へ移動する。
+When AI agents become the primary implementers, that premise breaks. Writing drops from days
+to minutes, and implementation cost falls sharply too. The bottleneck therefore moves away
+from *writing* and *building* and towards **deciding** and **verifying**.
 
-この移動を無視してプロセスをそのまま持ち込むと、2 つの失敗が起きる。
-ひとつは、人間が AI の生成物を全部読もうとしてレビューがボトルネックになること。
-もうひとつは、読まずに承認して承認が形骸化することである。どちらも観測しやすく、
-そして後者は品質の低下として遅れて現れるため、より危険である。
+Carrying the old process over while ignoring that move produces one of two failures. Either
+humans try to read everything the AI produces and review becomes the bottleneck, or they
+approve without reading and approval becomes hollow. Both are easy to observe, and the second
+is more dangerous because it surfaces later, as a drop in quality.
 
-同時に、エージェントは doc を実装時の最大の文脈として読む。したがって doc は
-「人間が合意するための文書」であると同時に「**AI に渡すコンテキスト入力**」になる。
-この二重の役割が、Google 版からの設計変更を必要とする最大の理由である。
+At the same time, agents read the doc as their largest context at implementation time. So a
+doc is **both the artifact humans agree on and a context input for AI**. That dual role is the
+main reason to change anything about Google's version.
 
-本プロジェクトは現在コードを持たない状態であり、プロセスを先に定義できる。
-後からプロセスを導入するより、この順序のほうが安い。
+This project currently has no code, so the process can be defined first. That order is
+cheaper than retrofitting a process later.
 
 ## Goals
 
-- 着想から出荷までの流れを、**人間の判断地点（ゲート）** を軸に定義する
-- design doc を、人間向けの合意文書と AI 向けの実行制約を兼ねる形式に再設計する
-- 人間のレビュー負荷を、doc の分量ではなく**判断の数**に比例させる
-- チケット管理・ロードマップ・意思決定記録を GitHub のみで運用可能にする
-- プロセス違反を、人間の注意力ではなく **CI で機械的に検出**する
-- 新規参加者（人間・AI とも）が、リポジトリ内の文書だけで運用を開始できる
+- Define the flow from idea to shipped around **the points where a human decides** (gates)
+- Redesign the design doc to serve both human agreement and agent-facing constraint
+- Make human review load proportional to **the number of decisions**, not the length of the doc
+- Make issue tracking, roadmap, and decision records operable entirely within GitHub
+- Detect process violations **mechanically in CI**, not through human attention
+- Let a newcomer, human or AI, start working from the documents in the repository alone
 
 ## Non-Goals
 
-**今回やらないこと**
+**Not this time**
 
-- プロダクト固有の技術選定（言語、フレームワーク、インフラ）— 別 DD で扱う
-- プロダクトコード向けの CI（lint / typecheck / test）の構築 — コードが入った時点で追加する
-- Projects (v2) の実体作成とフィールド設定 — 本 doc は設計のみを定義し、設定は手作業で行う
-- 複数リポジトリ横断でのロードマップ管理
+- Product-specific technology choices (language, framework, infrastructure) — separate DDs
+- CI for product code (lint / typecheck / test) — added once code lands
+- Creating the Project and its fields by hand — this doc defines the design; a human performs
+  the one-time creation
+- Cross-repository roadmap management
 
-**そもそもやらないこと**
+**Not ever**
 
-- 工数見積もりの精緻化、ベロシティ計測、バーンダウン管理
-- 非エンジニアが Markdown / PR を使わずに参加するための導線
-- GitHub 以外のツール（チャット、外部文書ツール）への決定の永続化（[ADR-0001](../adr/ADR-0001-github-as-single-source-of-truth.md)）
+- Refining effort estimates, measuring velocity, burndown tracking
+- A path for non-engineers to participate without Markdown or PRs
+- Persisting decisions outside GitHub, in chat or an external document tool
+  ([ADR-0001](../adr/ADR-0001-github-as-single-source-of-truth.md))
 
 ## Decision Points
 
-### DP-1: 設計文書の記述言語
+### DP-1: Language of the documents
 
-- **選択肢 A**: 日本語（本文）+ 英語（ファイル名 slug と ID）。現在の実装はこちら
-- **選択肢 B**: 全面的に英語。将来の多言語チームや OSS 公開を見据える
-- **AI の推奨**: A。読み手が現時点で日本語話者であり、design doc の価値は
-  「散文で精密に書くこと」にある。第二言語で書くと精度が落ち、
-  書くことによる思考という中核機能が弱まる。ID と slug を英数字に限定してあるため、
-  後から本文だけ翻訳する道は残る
-- **覆すコスト**: 中。既存 doc の翻訳が必要になるが、doc 数が少ないうちは安い。
-  **早めに決めるほど安い判断**
-- **決定**: **B（全面的に英語）** — Owner 判断（2026-10-01）。AI の推奨 A は採用しない。
-  OSS 公開と多言語チームの可能性を優先する。**英語化の範囲はリポジトリ全体**
-  （DD / ADR / プロセス文書 / テンプレート / `CLAUDE.md` / `README.md` /
-  Issue・PR テンプレート / スキル / スクリプトの出力メッセージ）とし、
-  日本語と英語の混在を残さない。既存文書の英語化は本 doc の Implementation Plan #9 で行う
+- **Option A**: Japanese body with English IDs and filename slugs
+- **Option B**: English throughout, anticipating a multilingual team or an open-source release
+- **AI recommendation**: A. The readers are Japanese speakers today, and a design doc's value
+  lies in writing prose precisely; a second language costs precision and weakens the
+  thinking-by-writing function that is the whole point. IDs and slugs are already restricted
+  to ASCII, so translating only the bodies later remains possible
+- **Cost of reversal**: Medium. Existing docs must be translated, which is cheap while there
+  are few of them. **The earlier this is settled, the cheaper it is**
+- **Decision**: **B (English throughout)** — Owner, 2026-10-01. The AI recommendation was not
+  taken; the possibility of an open-source release and a multilingual team takes precedence.
+  **The scope is the whole repository** (DDs, ADRs, process docs, templates, `CLAUDE.md`,
+  `README.md`, Issue and PR templates, skills, and the output messages of the scripts), so
+  that no Japanese/English mixture remains. Carried out as Implementation Plan #9
 
-### DP-2: design doc を必須とする閾値
+### DP-2: Threshold at which a design doc is mandatory
 
-- **選択肢 A**: 「3 人日 / 3 セッション超」または「API・スキーマ変更」または
-  「代替案が 2 つ以上」。現在の実装はこちら
-- **選択肢 B**: もっと緩く（1 週間超のみ必須）。doc 作成の摩擦を減らす
-- **選択肢 C**: もっと厳しく（ほぼすべての変更に one-pager 以上を要求）
-- **AI の推奨**: A で開始し、3 か月後に実績で調整する。AI にとって執筆は安いので
-  C 寄りの運用も可能だが、**レビューする人間のコストが律速**になる。
-  A は「人間が週に数本読めば回る」水準を意図している
-- **覆すコスト**: **低**。判定基準の 1 行を書き換えるだけで、既存 doc に影響しない
-  `[推奨で進行・事後変更可]`
-- **決定**: **A（現在の閾値を維持）** — Owner 判断（2026-10-01）。AI の推奨どおり。
-  律速はレビューする人間側なので、「週に数本」を上限の目安とする。
-  **3 か月後（2027-01 目安）に実績で再評価する**: doc が週 5 本を超えて
-  レビューが滞るなら B 寄りに、設計の手戻りが起きるなら C 寄りに調整する
+- **Option A**: Over 3 person-days / 3 sessions, **or** an API or schema change, **or** two or
+  more alternatives
+- **Option B**: Looser — mandatory only over a week, reducing the friction of writing docs
+- **Option C**: Stricter — a one-pager or more for nearly every change
+- **AI recommendation**: A to begin with, revisited after three months against reality. Writing
+  is cheap for an AI, so a C-leaning practice is technically possible, but **the humans doing
+  the reviewing are the rate limiter**. A is pitched at "a human reads a few a week"
+- **Cost of reversal**: **Low**. Rewriting one line of the test, with no effect on existing docs
+  `[proceed on the recommendation, revisable]`
+- **Decision**: **A (keep the current threshold)** — Owner, 2026-10-01, as recommended. The
+  rate limiter is the reviewing human, so "a few a week" is the intended ceiling.
+  **Re-evaluate after three months (around 2027-01)**: shift towards B if docs exceed five a
+  week and review stalls, towards C if design rework starts appearing
 
-### DP-3: `agent/ready` ラベルを誰が付けるか
+### DP-3: Who applies the `agent/ready` label
 
-- **選択肢 A**: **人間のみ**が付ける。AI の自律範囲を人間が明示的に開く
-- **選択肢 B**: AI が Definition of Ready を自己判定して付けてよい。人間は事後に取り消す
-- **AI の推奨**: A。このラベルは AI の自律実行を開く唯一のスイッチであり
-  （[07-definition-of-done.md](../process/07-definition-of-done.md)）、
-  自己判定を許すと「AI が曖昧な Issue を自分で ready にして、自分の解釈で実装する」
-  という閉ループができる。**判断と実行の分離**はこのプロセスの中核なので、ここは守りたい。
-  ただし DoR を満たすための受け入れ条件の起草は AI がやってよい
-- **覆すコスト**: 低。運用ルールの変更のみ。ただし B から A へ戻すのは、
-  一度緩めた運用を締め直すことになるため実務上は難しい
-- **決定**: **A（人間のみが付ける）** — Owner 判断（2026-10-01）。AI の推奨どおり。
-  例外（`risk/low` かつ `size/xs|s` のみ AI の自己判定を許す中間案）も採らない。
-  判断と実行の分離を全 Issue で例外なく守る。
-  **AI は DoR を満たす状態まで Issue を整え、付与の可否を人間に確認する**ところまでが責務。
-  見直す兆候: Owner の付与操作が滞って `Agent Queue` が空のまま AI が待機する時間が
-  週 1 日以上になったとき（そのときは中間案を再検討する）
+- **Option A**: **Humans only.** A human explicitly opens the AI's scope of autonomy
+- **Option B**: The AI judges the Definition of Ready itself and applies the label; humans
+  revoke it afterwards
+- **AI recommendation**: A. This label is the single switch that opens AI autonomous execution
+  (see [07-definition-of-done.md](../process/07-definition-of-done.md)), and self-judgment
+  closes a loop in which the AI marks a vague Issue ready and then implements its own
+  interpretation of it. **Separating judgment from execution** is the core of this process, so
+  it is worth protecting here. Drafting the acceptance criteria needed to satisfy the DoR can
+  still be the AI's work
+- **Cost of reversal**: Low in form — only a practice change. But going from B back to A means
+  tightening a practice that has already been loosened, which is hard in reality
+- **Decision**: **A (humans only)** — Owner, 2026-10-01, as recommended. The middle option
+  (letting AI self-assess for `risk/low` and `size/xs|s` only) was also declined; the
+  separation of judgment from execution holds for every Issue without exception.
+  **The agent's responsibility ends at preparing the Issue to meet the DoR and asking.**
+  Signal to revisit: if the Owner's labelling falls behind to the point where the AI waits on
+  an empty `Agent Queue` for more than a day a week, reconsider the middle option
 
-### DP-4: 1 PR = 1 Issue の厳格さ
+### DP-4: How strict "1 PR = 1 Issue" is
 
-- **選択肢 A**: 厳格に 1:1。依存する作業は直列化する。現在の実装はこちら
-- **選択肢 B**: スタック PR（依存する複数 PR を積む）を許容し、並列度を上げる
-- **AI の推奨**: A で開始する。B は AI の並列実行と相性がよく魅力的だが、
-  レビューの負荷が跳ね上がり、コンフリクト解決がエージェント間で錯綜する。
-  A で回らないと分かってから B を検討するほうが安い
-- **覆すコスト**: **低**。運用を後から緩めるだけで、既存の成果物に影響しない
-  `[推奨で進行・事後変更可]`
-- **決定**: **A（厳格に 1:1）** — Owner 判断（2026-10-01）。AI の推奨どおり。
-  `scripts/check_pr.py` が複数 `Closes` を落とす現状の実装を維持する（変更不要）。
-  見直す兆候: 直列化による待ちが実測で全体のリードタイムの 3 割を超えたとき。
-  その場合も B への移行前に、まず Issue 分解の粒度（依存の作り込み方）を見直す
+- **Option A**: Strictly 1:1. Dependent work is serialised
+- **Option B**: Allow stacked PRs to raise parallelism
+- **AI recommendation**: A to begin with. B suits AI parallel execution and is tempting, but
+  review load rises sharply and conflict resolution tangles across agents. It is cheaper to
+  reach for B once A has demonstrably failed
+- **Cost of reversal**: **Low**. Loosening a practice later affects nothing already produced
+  `[proceed on the recommendation, revisable]`
+- **Decision**: **A (strictly 1:1)** — Owner, 2026-10-01, as recommended. The current
+  implementation, where `scripts/check_pr.py` rejects multiple `Closes`, stands unchanged.
+  Signal to revisit: when measured waiting caused by serialisation exceeds 30% of lead time.
+  Even then, revisit Issue decomposition granularity before moving to B
 
-### DP-5: Projects (v2) の自動化手段
+### DP-5: How Projects (v2) automation is built
 
-- **選択肢 A**: GitHub 組み込みの Project ワークフローのみを使う。設定は GUI
-- **選択肢 B**: GitHub Actions + GraphQL API で自動化をコード化し、リポジトリで管理する
-- **AI の推奨**: A で開始する。B は設定がバージョン管理される利点があるが、
-  Projects の GraphQL API は変更が多く、メンテナンスコストが継続的に発生する。
-  組み込みワークフローで表現できない要求が出てから B に移る
-- **覆すコスト**: 中。A から B への移行時、既存アイテムの状態を保ったまま
-  自動化を差し替える必要がある
-- **決定**: **B（Actions + GraphQL でコード化）** — Owner 判断（2026-10-01）。
-  AI の推奨 A は採用しない。[ADR-0001](../adr/ADR-0001-github-as-single-source-of-truth.md)
-  の「決定をすべてリポジトリに置く」方針と整合させ、Projects の設定を
-  レビュー可能・再現可能にすることを優先する。
-  **前提条件（調査済み）**: `eastasann/windx` は個人アカウントのため Project は
-  user-owned になり、**`GITHUB_TOKEN` では Projects v2 を操作できない**。
-  `project` スコープを持つ **classic PAT** をシークレット（`PROJECTS_TOKEN`）として
-  登録する必要がある（fine-grained PAT は個人アカウントの Projects 権限を取得できない）。
-  これに伴うセキュリティ上の代償は Cross-cutting Concerns に記載した。
-  実装は Implementation Plan #10
+- **Option A**: GitHub's built-in Project workflows only, configured through the GUI
+- **Option B**: Code the automation with GitHub Actions and the GraphQL API, managed in the
+  repository
+- **AI recommendation**: A to begin with. B has the advantage of version-controlled
+  configuration, but the Projects GraphQL API changes often and the maintenance cost is
+  ongoing. Move to B once a requirement appears that built-in workflows cannot express
+- **Cost of reversal**: Medium. Migrating from A to B means swapping the automation while
+  preserving the state of existing items
+- **Decision**: **B (code it with Actions and GraphQL)** — Owner, 2026-10-01. The AI
+  recommendation was not taken; consistency with
+  [ADR-0001](../adr/ADR-0001-github-as-single-source-of-truth.md) — keep every decision in the
+  repository — takes precedence, making the Projects configuration reviewable and
+  reproducible. **Established precondition**: `GITHUB_TOKEN` cannot operate on Projects v2
+  regardless of owner type (the `permissions:` entry `repository-projects` applies to classic
+  projects), so another token is required; which one depends on ownership, settled in DP-6.
+  Built as Implementation Plan #10
+
+### DP-6: Project ownership type and the authentication method
+
+Raised by DP-5=B. Since `GITHUB_TOKEN` cannot operate on Projects v2, the token has to be
+chosen — and **the usable tokens differ by who owns the project** (the research is in
+Appendix A-3).
+
+- **Option A**: **Support both.** Hold the owner type (`user` / `organization`) as
+  configuration and abstract the credential behind a single secret name, `PROJECTS_TOKEN`, so
+  the same code runs whether that holds a classic PAT or a GitHub App installation token
+- **Option B**: **Assume organisation ownership** and standardise on a GitHub App (GitHub's
+  recommended setup). Does not work for a personal account
+- **Option C**: **Assume user ownership** (classic PAT) and rebuild when moving to an organisation
+- **AI recommendation**: **A**. The Projects v2 GraphQL mutations themselves do not depend on
+  owner type; the only differences are (1) whether the project is looked up through
+  `user(login:)` or `organization(login:)`, and (2) where the token comes from. Switching those
+  two on configuration is cheap, whereas C means rebuilding the automation on a move to an
+  organisation and B does not work on the current personal account. **Supporting both is the
+  cheapest.** It also means a later move to an organisation only requires swapping the
+  contents of `PROJECTS_TOKEN` for an App installation token, which is the narrower permission
+- **Cost of reversal**: **Low**. Two configuration values and one query branch, so dropping
+  either side later is easy `[proceed on the recommendation, revisable]`
+- **Decision**: **A (support both)** — proceeded on the recommendation, 2026-10-01, under the
+  Owner's explicit instruction to carry the work to completion. Permitted because the cost of
+  reversal is low and the DP is marked `[proceed on the recommendation, revisable]`. Recorded
+  as [ADR-0004](../adr/ADR-0004-projects-automation-owner-agnostic.md). If the Owner wants B
+  or C instead, the change is a configuration edit plus deleting one branch
 
 ## Design
 
-### 構造
+### Structure
 
-プロセスを「工程」ではなく「**人間の判断地点**」で区切る。これをゲートと呼ぶ。
-工程で区切ることは、AI 駆動では意味を失う。各工程の所要時間が大きく変わるうえ、
-実際に守るべき境界は「誰が責任を負うか」の切れ目だからである。
+The process is divided by **the points where a human decides**, not by phase. We call these
+gates. Dividing by phase loses meaning under AI-driven work: the duration of each phase shifts
+sharply, and the boundary that actually matters is where responsibility changes hands.
 
 ```
-G0 問題定義 ──→ G1 設計合意 ──→ G2 実装承認 ──→ G3 出荷判断
-  Issue          Design Doc       Pull Request      Release
-  「解くべきか」  「この設計か」   「この実装か」     「出してよいか」
+G0 frame the problem ──→ G1 agree on design ──→ G2 approve the build ──→ G3 decide to ship
+   Issue                   Design Doc              Pull Request             Release
+   "worth solving?"        "this design?"          "this code?"             "ship it?"
 ```
 
-ゲート間は AI が連続実行してよい。ゲートでは必ず止まる。
-**判断が不要な地点にゲートを置かない**（進捗報告のための会議を作らない）。
-詳細は [`docs/process/01-lifecycle.md`](../process/01-lifecycle.md)。
+Between gates AI runs continuously. At a gate it always stops.
+**No gate is placed where no decision is needed** — we do not invent meetings for progress
+reports. Details in [`docs/process/01-lifecycle.md`](../process/01-lifecycle.md).
 
-### design doc の二層構成
+### A design doc in two layers
 
-Google 版の散文構造を保ちながら、機械可読な層を重ねる（[ADR-0002](../adr/ADR-0002-design-doc-as-agent-context.md)）。
+Google's prose structure is kept, with a machine-readable layer laid over it
+([ADR-0002](../adr/ADR-0002-design-doc-as-agent-context.md)).
 
-| 層 | 内容 | 読者 |
+| Layer | Contents | Reader |
 | --- | --- | --- |
-| front matter | `id` / `status` / `owner` / `tracking_issue` 等 | CI・自動化 |
-| 散文本体 | Context / Goals / Design / Alternatives / Cross-cutting | 人間 |
-| **Decision Points** | 判断が必要な分岐、AI の推奨、覆すコスト | **人間（レビューの本体）** |
-| **Acceptance Criteria** | Given/When/Then + 検証コマンド | 人間・AI・CI |
-| **Context for Agents** | 触る場所、踏襲パターン、禁止事項 | **AI（実行制約）** |
+| front matter | `id` / `status` / `owner` / `tracking_issue` and so on | CI, automation |
+| prose body | Context / Goals / Design / Alternatives / Cross-cutting | Humans |
+| **Decision Points** | The forks needing judgment, the AI's recommendation, cost of reversal | **Humans (the body of the review)** |
+| **Acceptance Criteria** | Given/When/Then plus the verifying command | Humans, AI, CI |
+| **Context for Agents** | Where to touch, patterns to follow, prohibitions | **AI (execution constraint)** |
 
-### 人間の判断を Decision Points に集約する
+### Concentrating human judgment in Decision Points
 
-doc 全体を承認させる運用は、AI の生成量の前で破綻する
-（[ADR-0003](../adr/ADR-0003-human-gates-at-decision-points.md)）。
-代わりに「後から覆すコストが高い分岐」だけを Decision Points として切り出し、
-人間はそこにだけ回答する。**判断コストを、覆すコストに比例させる**。
+Having humans approve a whole doc collapses under the volume AI produces
+([ADR-0003](../adr/ADR-0003-human-gates-at-decision-points.md)). Instead, only the forks that
+are expensive to reverse are lifted out as Decision Points, and humans answer those.
+**The cost of deciding is matched to the cost of reversing.**
 
-覆すコストが低い DP は `[推奨で進行・事後変更可]` と明記し、人間の判断を省略してよい。
-この doc の DP-2 と DP-4 がその実例である。
+A Decision Point that is cheap to reverse is marked `[proceed on the recommendation, revisable]`
+and skips human judgment. DP-2, DP-4, and DP-6 in this doc are the worked examples.
 
-### 2 つのキューの分離
+### Two separate queues
 
-GitHub Projects 上に、人間用と AI 用の作業キューを別々に持つ。
+GitHub Projects carries one work queue for humans and one for AI.
 
-| ビュー | フィルタ | 見る人 |
+| View | Filter | Who watches it |
 | --- | --- | --- |
-| **Needs Decision** | `agent/needs-human` | **人間**。判断待ちの一覧 |
-| **Agent Queue** | `agent/ready`（優先度順） | **AI**。自律着手してよい Issue |
+| **Needs Decision** | `agent/needs-human` | **Humans.** What is waiting on a decision |
+| **Agent Queue** | `agent/ready`, by priority | **AI.** What it may start autonomously |
 
-`agent/ready` は Definition of Ready を満たしたときにだけ付く。
-このラベルが AI の自律範囲を制御する唯一のスイッチになる（DP-3 参照）。
+`agent/ready` is applied only when the Definition of Ready is met, and only by a human (DP-3).
+It is the single switch controlling AI autonomy.
 
-### トレーサビリティ
+### Projects automation, independent of ownership
+
+Per DP-5 and DP-6, field and status synchronisation lives in
+[`scripts/project_sync.py`](../../scripts/project_sync.py), driven by
+[`project-sync.yml`](../../.github/workflows/project-sync.yml). The script takes
+`PROJECT_OWNER`, `PROJECT_OWNER_TYPE`, and `PROJECT_NUMBER` as configuration and a credential
+from `PROJECTS_TOKEN`, so the same code serves a user-owned and an organisation-owned project.
+
+### Traceability
 
 ```
 ADR-xxxx ←── DD-xxxx ←── Issue #n ←── PR #m
-なぜ決めたか  どう作るか   何をやるか   やったこと
+why decided  how built   what to do   what was done
 ```
 
-リンク規約（Issue→DD、PR→Issue、DD→ADR）を定め、doc 側の整合は CI が検証する。
+Link conventions (Issue→DD, PR→Issue, DD→ADR) are fixed, and the doc side is validated in CI.
 
-### 強制手段
+### Enforcement
 
-規約は「人間が気をつける」では守られない。機械的に検証できるものは CI に落とす。
+Conventions are not kept by people being careful. Anything checkable goes into CI.
 
-| 検証 | 手段 |
+| Check | Mechanism |
 | --- | --- |
-| front matter の必須キー・状態遷移 | `scripts/validate_docs.py` |
-| 必須見出しの有無と順序 | 同上 |
-| **approved な doc に未決の DP がないこと** | 同上 |
-| **ADR の Consequences に「悪い結果」が 2 項目以上あること** | 同上 |
-| ID とファイル名の整合、索引との整合 | 同上 |
-| ラベル体系の実体との一致 | `.github/workflows/labels.yml` |
+| Front matter keys and state values | `scripts/validate_docs.py` |
+| Required headings, present and in order | same |
+| **No unresolved Decision Point in an approved doc** | same |
+| **Two or more bad outcomes in an ADR's Consequences** | same |
+| ID–filename agreement, index agreement | same |
+| Relative links resolve | `scripts/check_links.py` |
+| PR traceability (`Closes #n`, `Design doc:`) | `scripts/check_pr.py` |
+| Label definitions match reality | `scripts/sync_labels.py` |
+| Projects fields match labels and state | `scripts/project_sync.py` |
 
 ## Alternatives Considered
 
-### 代替案 1: Google の design doc 運用をそのまま持ち込む
+### Alternative 1: Carry Google's design doc practice over unchanged
 
-- **どう動くか**: 3〜10 ページの散文を書き、レビュアが全文を読んで承認する。
-  チケットは既存ツール、doc は文書ツールに置く
-- **失うもの**: 執筆コスト低下の恩恵。doc とコードの乖離検出
-- **却下理由**: 人間が全文を読む前提が、AI の生成量に対してスケールしない。
-  レビューがボトルネックになるか、読まずに承認して形骸化するかの二択になる。
-  また doc が AI への入力になるという新しい役割に対応できず、スコープクリープと
-  既存パターン無視を doc で抑止できない
+- **How it works**: Write three to ten pages of prose; a reviewer reads all of it and approves.
+  Issues live in an existing tracker, docs in a document tool
+- **What you give up**: The benefit of cheap writing. Drift detection between doc and code
+- **Why rejected**: The premise that a human reads the whole thing does not scale to the volume
+  AI produces, leaving a choice between review as the bottleneck and hollow approval. It also
+  cannot serve the doc's new role as AI input, so scope creep and ignored patterns cannot be
+  suppressed through the doc
 
-### 代替案 2: 軽量プロセス（Issue と PR のみ、design doc を作らない）
+### Alternative 2: A light process (Issues and PRs only, no design docs)
 
-- **どう動くか**: Issue に要件を書き、AI が実装し、PR でレビューする。
-  設計文書は作らない。判断はすべて PR 上で行う
-- **失うもの**: 実装前の合意。代替案の検討。決定の根拠の記録
-- **却下理由**: 実装が安いからといって、**間違った設計を速く実装してよいことにはならない**。
-  設計の手戻りは実装後に最も高くつく構造は変わっていない。
-  また「なぜそうしたか」が PR の diff に埋もれ、6 か月後に追跡できなくなる。
-  執筆コストが AI により下がった今、doc を書かない理由が最も薄い
+- **How it works**: Requirements go in the Issue, AI implements, review happens on the PR. No
+  design documents; everything is decided in the PR
+- **What you give up**: Agreement before building. Consideration of alternatives. The recorded
+  rationale
+- **Why rejected**: Cheap implementation **does not make it acceptable to build the wrong
+  design quickly**. The structure in which design rework is most expensive after
+  implementation has not changed. And "why we did this" gets buried in a diff, untraceable six
+  months later. With AI having lowered the cost of writing, the case for not writing is at its
+  weakest
 
-### 代替案 3: AI レビュアに一次レビューを任せ、人間は最終承認のみ
+### Alternative 3: Let an AI reviewer do the first pass, humans only final approval
 
-- **どう動くか**: AI が doc とコードをレビューし、指摘を出す。人間は AI の
-  レビュー結果を見て承認する
-- **失うもの**: 判断の説明責任の所在
-- **却下理由**: 「後から覆すコストが高い判断」を AI が代行することになり、
-  責任の所在が曖昧になる。これは AI の能力の問題ではなく責任構造の問題である。
-  ただし **AI レビューを CI の一部として併用することは採用する**
-  （人間のゲートの代替としないだけ）
+- **How it works**: AI reviews docs and code and raises findings; humans approve based on the
+  AI's review
+- **What you give up**: Clarity about who is accountable for a judgment
+- **Why rejected**: It delegates decisions that are expensive to reverse to an AI, which blurs
+  accountability. This is a question of responsibility structure, not of AI capability.
+  **Running AI review as part of CI is adopted** — it simply is not a substitute for the human gate
 
-### 代替案 4: 何もしない（プロセスを定義せず、都度判断する）
+### Alternative 4: Do nothing (no defined process, decide case by case)
 
-- **どう動くか**: 明文化されたプロセスを持たず、その場の判断で進める
-- **却下理由**: AI エージェントは明文化されていない規約を推論できない。
-  暗黙知は人間のチームでは機能するが、AI が主要な実行主体になると機能しない。
-  結果として同じ指摘を毎回繰り返すことになり、その総コストは明文化のコストを超える
+- **How it works**: No written process; judgment in the moment
+- **Why rejected**: AI agents cannot infer unwritten conventions. Tribal knowledge works for
+  human teams but stops working once AI is a primary executor. The result is repeating the same
+  correction forever, whose total cost exceeds the cost of writing things down
 
 ## Cross-cutting Concerns
 
-| 観点 | 影響と対応 |
+| Concern | Impact and response |
 | --- | --- |
-| セキュリティ | doc・Issue・PR への秘密情報混入を禁止（`CLAUDE.md` のハードルール）。プロダクトコード導入時に秘密情報スキャンを CI へ追加する。**DP-5=B の代償**: user-owned Projects v2 の操作に classic PAT が必要で、classic PAT の `project` スコープは絞り込めず、`repo` を併せると当該ユーザがアクセスできる全リポジトリに及ぶ。影響を限定するため (a) トークンは Projects 操作専用とし他用途に流用しない、(b) 有効期限を 90 日以内にして更新を運用に組み込む、(c) Project を Organization 所有に移せる時点で移し、`GITHUB_TOKEN` 運用へ切り替える |
-| プライバシー / 個人情報 | 本プロセス自体は個人情報を扱わない。顧客データを扱う設計は DD の Cross-cutting で個別に検討する |
-| 可観測性（失敗に気づけるか） | プロセス違反は `docs-lint` の失敗として現れる。運用の劣化（DP 抽出漏れ、形骸化した doc）は CI では検出できず、[06-agent-protocol.md](../process/06-agent-protocol.md) の失敗パターン表による人間の定期点検に依存する |
-| パフォーマンス | `validate_docs.py` は doc 数に線形。数百件までは 1 秒未満で完了する見込み |
-| コスト | 追加の課金要素なし（GitHub Actions の標準枠内） |
-| 運用・移行・ロールバック | 既存プロセスがないため移行対象なし。ロールバックは本 PR の revert で完了する |
-| 後方互換性 | 該当なし（新規リポジトリ） |
+| Security | Secrets are banned from docs, Issues, and PRs (a hard rule in `CLAUDE.md`); secret scanning joins CI when product code lands. **The cost of DP-5=B**: operating Projects v2 needs a token other than `GITHUB_TOKEN`. For organisation-owned projects a GitHub App with organisation `Projects: write` keeps the permission narrow and is preferred. For user-owned projects only a classic PAT works, and its `project` scope cannot be narrowed — combined with `repo` it reaches every repository the user can see. Limit the blast radius by (a) keeping the token exclusive to Projects, (b) expiring it within 90 days with renewal in the routine, (c) moving to organisation ownership with an App as soon as possible |
+| Privacy / personal data | This process handles none. Designs touching customer data address it in their own Cross-cutting section |
+| Observability (will you notice failure) | Process violations surface as a `docs-lint` or `pr-checks` failure. Practice decay — missed Decision Points, hollow docs — is not CI-detectable and relies on humans working the failure-pattern table in [06-agent-protocol.md](../process/06-agent-protocol.md) |
+| Performance | `validate_docs.py` is linear in doc count; expected to stay under a second into the hundreds |
+| Cost | No new billing. Within the standard GitHub Actions allowance |
+| Operations, migration, rollback | No prior process to migrate from. Rollback is reverting this PR |
+| Backwards compatibility | N/A (new repository) |
 
 ## Acceptance Criteria
 
-- **AC-1**: Given 必須見出しを欠いた design doc, When `validate_docs.py` を実行, Then 非ゼロ終了し、欠けている見出しを列挙する
-  - 検証: `python3 scripts/validate_docs.py`
-- **AC-2**: Given `status: approved` かつ未決の Decision Point を含む doc, When 検証を実行, Then 「G1 未通過」としてエラーになる
-  - 検証: `python3 scripts/validate_docs.py`（DD-0001 の status を一時的に `approved` に変えて確認する）
-- **AC-3**: Given 「悪い結果」が 1 項目以下の ADR, When 検証を実行, Then エラーになる
-  - 検証: `python3 scripts/validate_docs.py`
-- **AC-4**: Given 索引 README に載っていない doc, When 検証を実行, Then 索引の不整合としてエラーになる
-  - 検証: `python3 scripts/validate_docs.py`
-- **AC-5**: Given 英語 slug を指定した新規 doc の作成, When `new_doc.py` を実行, Then 採番されたファイルが作られ、索引に行が追加され、検証を通過する
-  - 検証: `python3 scripts/new_doc.py design "テスト" --slug scratch-test && python3 scripts/validate_docs.py`
-- **AC-6**: Given `main` への push, When CI が走る, Then `docs-lint` と `labels` の両ワークフローが成功する
-  - 検証: GitHub Actions の実行結果
-- **AC-8**: Given `agent/ready` を付与した Issue, When Projects 同期ワークフローが走る, Then その Issue の Project Status が `Ready` に変わり、`Agent Queue` ビューに現れる
-  - 検証: `gh workflow run project-sync.yml` の後、`gh project item-list` で Status を確認
-- **AC-7**: Given 英語化後のリポジトリ, When 追跡ファイルから日本語（ひらがな・カタカナ・漢字）を探す, Then 1 件も見つからない
-  - 検証: `! git grep -qlP '(*UTF)[\x{3041}-\x{309F}\x{30A0}-\x{30FF}\x{4E00}-\x{9FFF}]' -- .`
-    （残存があれば非ゼロ終了。`(*UTF)` を省くと PCRE が範囲を解釈できず fatal になる）
+- **AC-1**: Given a design doc missing a required heading, When `validate_docs.py` runs, Then it exits non-zero and lists the missing headings
+  - Verify: `python3 scripts/validate_docs.py`
+- **AC-2**: Given a doc at `status: approved` with an unresolved Decision Point, When validation runs, Then it fails as "G1 not cleared"
+  - Verify: `python3 scripts/validate_docs.py` (temporarily blank a `**Decision**` value to confirm)
+- **AC-3**: Given an ADR with one or fewer bad outcomes, When validation runs, Then it fails
+  - Verify: `python3 scripts/validate_docs.py`
+- **AC-4**: Given a doc absent from the index README, When validation runs, Then it fails on index disagreement
+  - Verify: `python3 scripts/validate_docs.py`
+- **AC-5**: Given a new doc created with an English slug, When `new_doc.py` runs, Then the numbered file exists, a row is appended to the index, and validation passes
+  - Verify: `python3 scripts/new_doc.py design "Scratch" --slug scratch-test && python3 scripts/validate_docs.py`
+- **AC-6**: Given a push to `main`, When CI runs, Then `docs-lint` and `labels` both succeed
+  - Verify: the GitHub Actions run
+- **AC-7**: Given the repository after translation, When tracked files are searched for Japanese (hiragana, katakana, kanji), Then nothing is found
+  - Verify: `! git grep -qlP '(*UTF)[\x{3041}-\x{309F}\x{30A0}-\x{30FF}\x{4E00}-\x{9FFF}]' -- .`
+    (omitting `(*UTF)` makes PCRE reject the ranges with a fatal error)
+- **AC-8**: Given `PROJECT_OWNER_TYPE` set to either `user` or `organization`, When `project_sync.py` builds its lookup, Then it emits the matching GraphQL query and the label-to-field mapping without contacting the network
+  - Verify: `python3 scripts/project_sync.py --self-test`
 
 ## Implementation Plan
 
-| # | 作業 | 受け入れ条件 | 依存 | 規模 |
+| # | Work | Acceptance | Depends on | Size |
 | --- | --- | --- | --- | --- |
-| 1 | プロセス文書一式（`docs/process/`）の作成 | 8 文書が揃い、相互リンクが切れていない | — | M |
-| 2 | テンプレート（design doc / one-pager / ADR）の作成 | `new_doc.py` から生成でき、検証を通過する | — | S |
-| 3 | 検証スクリプトと生成スクリプト | AC-1〜AC-5 | 2 | M |
-| 4 | Issue テンプレート・PR テンプレート・ラベル定義 | GitHub 上でテンプレートが選択でき、ラベルが同期される | — | S |
-| 5 | CI ワークフロー（`docs-lint` / `labels`） | AC-6 | 3, 4 | S |
-| 6 | Claude Code スキル（design-doc / decompose / adr） | 各スキルが本プロセスの規約どおりに動く | 1, 2 | S |
-| 7 | **Projects (v2) の作成とフィールド設定**（手作業） | 5 ビューが存在し、Agent Queue と Needs Decision が機能する | 4 | S |
-| 8 | **最初の Milestone 作成と運用開始** | 説明欄に到達目標が 3 文で書かれている | 7 | XS |
-| 9 | **リポジトリ全体の英語化**（DP-1 の決定による） | AC-7 | DP-1 | L |
+| 1 | Process documents (`docs/process/`) | Nine documents exist with no broken cross-links | — | M |
+| 2 | Templates (design doc / one-pager / ADR) | Generated by `new_doc.py` and pass validation | — | S |
+| 3 | Validation and scaffolding scripts | AC-1 to AC-5 | 2 | M |
+| 4 | Issue templates, PR template, label definitions | Templates selectable on GitHub; labels sync | — | S |
+| 5 | CI workflows (`docs-lint` / `pr-checks` / `labels`) | AC-6 | 3, 4 | S |
+| 6 | Claude Code skills (design-doc / decompose / adr) | Each follows this process | 1, 2 | S |
+| 7 | **Create the Project and its fields** (manual) | Five views exist; Agent Queue and Needs Decision work | 4 | S |
+| 8 | **First Milestone and start of operation** | Its description states the goal in three sentences | 7 | XS |
+| 9 | **Translate the repository to English** (from DP-1) | AC-7 | DP-1 | L |
+| 10 | **Code the Projects automation** (from DP-5, DP-6) | AC-8 | DP-5, DP-6 | L |
 
-| 10 | **Projects 自動化のコード化**（DP-5 の決定による） | AC-8 | DP-5, 7, PAT 登録 | L |
-
-項目 1〜6 は本 PR に含む。**7〜8 は GitHub の GUI 操作が必要なため、Owner が実施する。**
-項目 9 は DP-1 の決定（全面英語）を受けた作業で、**本 doc 自身も対象に含む**。
-項目 10 は DP-5 の決定を受けた作業で、**着手前に Owner による classic PAT の登録が必要**
-（`PROJECTS_TOKEN` シークレット、`project` スコープ）。
-DP-5=B を選んだため、項目 7 の GUI 設定はコード化の対象に置き換わるが、
-**Project の初回作成と PAT 登録だけは Owner の手作業として残る**。
+Items 1–6, 9, and 10 are in this PR.
+**Items 7 and 8 require the GitHub GUI and a credential, so the Owner performs them**
+(the steps are in [09-setup-checklist.md](../process/09-setup-checklist.md)).
 
 ## Context for Agents
 
-- **触ってよい場所**: `docs/**`, `.github/**`, `scripts/**`, `.claude/**`, `README.md`, `CLAUDE.md`
-- **触ってはいけない場所**: プロダクトコード（現時点では存在しない）
-- **踏襲するパターン**:
-  - 新しいプロセス文書は `docs/process/NN-<topic>.md` の命名に従い、`docs/process/README.md` の表に追加する
-  - 検証ルールを足すときは `scripts/validate_docs.py` のチェック関数を 1 つ増やす形にする
-  - 規約を追加したら、**必ず対応する検証を CI に足すか、`CLAUDE.md` に書く**。文書だけに書いた規約は守られない
-- **使ってよい依存**: **Python 標準ライブラリのみ**。`scripts/` に外部依存を追加しない
-  （CI のセットアップを軽く保つため。追加が必要なら Decision Point として提示すること）
-- **既知の落とし穴**:
-  - `validate_docs.py` の front matter パーサは YAML の部分集合しか解釈しない。
-    ネストした辞書やブロックスカラー（`|`, `>`）は扱えない
-  - テンプレート（`docs/templates/`）は検証対象外。プレースホルダを含むため、
-    `docs/design/` や `docs/adr/` に置いてはならない
-  - `new_doc.py` は日本語タイトルから slug を作れない。`--slug` を明示する
+- **May touch**: `docs/**`, `.github/**`, `scripts/**`, `.claude/**`, `README.md`, `CLAUDE.md`
+- **Must not touch**: product code (none exists yet)
+- **Follow these patterns**:
+  - A new process document is named `docs/process/NN-<topic>.md` and added to the table in `docs/process/README.md`
+  - A new validation rule is one more check function in `scripts/validate_docs.py`
+  - When adding a convention, **always add the matching check to CI or write it into `CLAUDE.md`**. A convention that lives only in prose is not followed
+  - All prose, comments, and script output are in English (DP-1)
+- **Dependencies allowed**: **the Python standard library only**. Do not add third-party
+  dependencies to `scripts/` (it keeps CI setup light). If one is needed, raise it as a
+  Decision Point
+- **Known traps**:
+  - The front matter parser in `validate_docs.py` understands only a subset of YAML; nested
+    mappings and block scalars (`|`, `>`) are not handled
+  - Templates in `docs/templates/` are excluded from validation because they contain
+    placeholders; never place them in `docs/design/` or `docs/adr/`
+  - `new_doc.py` cannot derive a slug from a non-ASCII title; pass `--slug`
+  - `git grep -P` needs the `(*UTF)` prefix before `\x{...}` ranges above U+00FF
 
 ## Open Questions
 
-- [ ] `area/*` ラベルの粒度は、プロダクトの構造が決まってから定義する — 担当: @eastasann
-- [ ] AI レビュー（CI での自動レビュー）をどのツールで入れるか — 担当: @eastasann
-- [ ] `risk/high` の判定を機械化できるか（対象パスからの自動ラベル付与） — 担当: @eastasann
-- [ ] プロセスの実効性をどう測るか（手戻り率、DP 抽出漏れの件数など） — 担当: @eastasann
+- [ ] Define the granularity of `area/*` labels once the product structure is settled — owner: @eastasann
+- [ ] Choose the tool for AI review in CI — owner: @eastasann
+- [ ] Can `risk/high` be assigned mechanically from the touched paths — owner: @eastasann
+- [ ] How to measure whether this process works (rework rate, missed Decision Points) — owner: @eastasann
 
 ## Appendix
 
-### A-1. Google の design doc との差分一覧
+### A-1. Differences from Google's design doc
 
-| 項目 | Google | 本プロセス | 根拠 |
+| Item | Google | Here | Basis |
 | --- | --- | --- | --- |
-| 形式 | 散文 | 散文（維持） | 曖昧さの検出機能 |
-| Goals / Non-goals | 必須 | 必須（強化） | Non-Goals が AI のスコープ境界になる |
-| Alternatives | 必須（形骸化しがち） | 必須（2〜3 案を実行可能なレベルで） | 執筆コスト低下により建前をやめられる |
-| 長さ | 3〜10 ページ | 1〜5 ページ + 付録 | 人間が読む本体を短く保つ |
-| 承認単位 | doc 全体 | **Decision Points** | ADR-0003 |
-| 機械可読性 | なし | **front matter 必須** | ADR-0002 |
-| 保管先 | 社内文書ツール | **リポジトリ内 Markdown** | ADR-0001 |
-| 追加節 | — | **Context for Agents / Acceptance Criteria** | ADR-0002 |
+| Form | Prose | Prose (kept) | Detects vagueness |
+| Goals / Non-goals | Required | Required (strengthened) | Non-Goals bound the agent's scope |
+| Alternatives | Required, often lip service | Required, two or three at a workable level | Cheap writing lets us drop the pretence |
+| Length | 3–10 pages | 1–5 pages + appendix | Keep the human-read body short |
+| Unit of approval | The whole doc | **Decision Points** | ADR-0003 |
+| Machine-readable | None | **Front matter required** | ADR-0002 |
+| Stored in | An internal doc tool | **Markdown in the repository** | ADR-0001 |
+| Added sections | — | **Context for Agents / Acceptance Criteria** | ADR-0002 |
 
-### A-2. 本 doc 自体の位置づけ
+### A-2. What this doc is
 
-この doc は、本プロセスに従って書かれた最初の design doc であり、
-テンプレートの実例を兼ねる。Decision Points は実際に未決であり、
-Owner の回答をもって `status: approved` に遷移する。
+This is the first design doc written under this process, and doubles as the worked example of
+the template. Its Decision Points were genuinely open during review; the Owner's answers of
+2026-10-01 moved it to `status: approved`.
+
+### A-3. Authenticating to Projects v2 (research, 2026-10-01)
+
+`GITHUB_TOKEN` cannot operate on Projects v2. The `repository-projects` entry available under
+the `permissions:` key applies to **classic projects (v1)** and has no effect on Projects v2.
+GitHub's own recommendation is **a GitHub App for organisation-owned projects and a personal
+access token for user-owned projects**.
+
+| Owner | `GITHUB_TOKEN` | GitHub App | classic PAT | fine-grained PAT |
+| --- | --- | --- | --- | --- |
+| user-owned | ✗ | ✗ cannot reach user-level Projects | ✓ `project` scope | ✗ cannot obtain Projects permission for a personal account |
+| org-owned | ✗ | ✓ **recommended**, `organization_projects: write` | ✓ `project` scope | △ possible, with known GraphQL issues reported |
+
+Notes:
+
+- A GitHub App needs **organisation projects read/write**; repository Projects permission is
+  not sufficient
+- The installation token is minted in the workflow (for example with `actions/create-github-app-token`)
+- With insufficient permission, mutations such as `addProjectV2ItemById` return
+  `Resource not accessible by integration`
+- A classic PAT's `project` scope **cannot be narrowed to one repository**; combined with
+  `repo` it reaches every repository the user can see
+
+Sources:
+
+- [GITHUB_TOKEN - GitHub Docs](https://docs.github.com/en/actions/concepts/security/github_token)
+- [Assigning permissions to jobs - GitHub Docs](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs)
+- [Automating Projects using Actions - GitHub Docs](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions)
+- [Permissions required for GitHub Apps - GitHub Docs](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps)
+- [Permissions required for fine-grained personal access tokens - GitHub Docs](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens)
+- [Authenticating with a GitHub App to create V2 projects (community discussion #46681)](https://github.com/orgs/community/discussions/46681)
+- [actions/add-to-project issue #289: fine-grained tokens and the GraphQL API](https://github.com/actions/add-to-project/issues/289)

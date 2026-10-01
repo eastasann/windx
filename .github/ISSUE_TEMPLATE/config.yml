@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 結論が出ていない相談・アイデア
+  - name: Ideas and open questions
     url: https://github.com/eastasann/windx/discussions
-    about: まだ「やるかどうか」が決まっていない話は Discussions へ。結論が出たら Issue か ADR に落とします。
-  - name: プロセスの読み方
+    about: If it is not yet decided whether to do the thing, start in Discussions. Once settled it becomes an Issue or an ADR.
+  - name: How to read the process
     url: https://github.com/eastasann/windx/blob/main/docs/process/README.md
-    about: どのテンプレートを使うか迷ったら、まずプロセス標準を読んでください。
+    about: Unsure which template to use? Start with the process standard.

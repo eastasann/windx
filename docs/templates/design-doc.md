@@ -1,6 +1,6 @@
 ---
 id: DD-0000
-title: "<決定的な動詞を含む短いタイトル>"
+title: "<short title containing a decisive verb>"
 type: design-doc
 status: draft
 owner: "@<github-handle>"
@@ -14,136 +14,138 @@ superseded_by: null
 ---
 
 <!--
-使い方:
-  python3 scripts/new_doc.py design "<タイトル>"   ← 採番とコピーを自動で行う
-  python3 scripts/validate_docs.py                  ← 提出前に必ず実行する
+Usage:
+  python3 scripts/new_doc.py design "<title>" --slug <english-slug>   # numbers and copies this
+  python3 scripts/validate_docs.py                                   # always run before submitting
 
-書き方の規約: docs/process/03-design-doc.md
-★ の節は本プロセス独自。AI 駆動で最も効く 3 節なので、絶対に空にしない。
+Conventions: docs/process/03-design-doc.md
+The sections marked ★ are specific to this process. They are the three that matter most
+under AI-driven development — never leave them empty.
 -->
 
 ## Summary
 
-<!-- 3 文以内。ここだけ読めば「何をするか」が分かること。 -->
+<!-- Three sentences or fewer. Reading only this should tell you what happens. -->
 
 ## Context
 
 <!--
-散文で書く（箇条書きの羅列を避ける）。今どうなっていて、何が問題か。
-「なぜ今か」を必ず含める。読者は該当領域を知らない同僚を想定する。
+Write prose (avoid a pile of bullets). How things are now, and what is wrong.
+Always include "why now". Assume a colleague who does not know this area.
 -->
 
 ## Goals
 
-<!-- 達成すること。検証可能な表現で。3〜5 個。 -->
+<!-- What gets achieved, stated verifiably. Three to five items. -->
 
-- <!-- 例: セッション検証の p99 レイテンシを 50ms 未満にする -->
+- <!-- e.g. Bring p99 session-validation latency under 50ms -->
 
 ## Non-Goals
 
 <!--
-★ やらないこと。AI のスコープ境界として直接機能するので、必ず埋める。
-「今回はやらない」ものと「そもそもやらない」ものを分けて書く。
+★ What you are not doing. This acts directly as the agent's scope boundary, so fill it in.
+Separate "not this time" from "not ever".
 -->
 
-- <!-- 例: 認可ロジックの変更（別 doc で扱う） -->
+- <!-- e.g. Changes to authorisation logic (covered by a separate doc) -->
 
 ## Decision Points
 
 <!--
-★ 人間が判断する点。ここがレビューの本体。空のままレビュー依頼を出さない。
-各 DP に「選択肢 2 つ以上」「AI の推奨と根拠」「覆すコスト」を必ず書く。
-覆すコストが安いなら [推奨で進行・事後変更可] と明記してよい。
+★ What a human decides. This is the body of the review. Never request review with it empty.
+Every DP needs two or more options, the AI's recommendation, and the cost of reversal.
+If reversal is cheap, you may mark it [proceed on the recommendation, revisable].
 -->
 
-### DP-1: <判断すべきこと>
+### DP-1: <what has to be decided>
 
-- **選択肢 A**: <案と、採用した場合の帰結>
-- **選択肢 B**: <案と、採用した場合の帰結>
-- **AI の推奨**: <どちらか> — <根拠。数値や既存コードの事実を挙げる>
-- **覆すコスト**: <低 / 中 / 高> — <なぜそう言えるか>
-- **決定**: <!-- Owner が回答したら、採用案と理由をここに追記する -->
+- **Option A**: <the option, and what follows from choosing it>
+- **Option B**: <the option, and what follows from choosing it>
+- **AI recommendation**: <which> — <reasoning; cite numbers or facts about the existing code>
+- **Cost of reversal**: <low / medium / high> — <why you can say that>
+- **Decision**: <!-- the Owner writes the chosen option and the reason here -->
 
 ## Design
 
 <!--
-設計本体。散文 + 図 + インターフェース定義。
-- システム構成（テキスト図で可）
-- 主要なインターフェース / API / スキーマ
-- データの流れと状態遷移
-- 失敗時の挙動
-長い詳細（計測データ、全 API 定義など）は Appendix に追い出す。
+The design itself. Prose + diagrams + interface definitions.
+- System shape (a text diagram is fine)
+- Key interfaces / APIs / schemas
+- Data flow and state transitions
+- Behaviour on failure
+Push long detail (measurements, full API definitions) into the Appendix.
 -->
 
 ## Alternatives Considered
 
 <!--
-★ 実行可能な代替案を 2〜3 案。AI にとって執筆は安いので、建前で済ませない。
-「何もしない」「既存機能で代用する」は必ず候補に入れる（一番安い案だから）。
-却下理由は「複雑だから」で終わらせない。何がどう複雑で、誰がそのコストを払うのか。
+★ Two or three workable alternatives. Writing is cheap for an AI, so drop the pretence.
+Always include "do nothing" and "use what already exists" — they are the cheapest options.
+Never let a rejection stop at "too complex": say what is complex and who pays for it.
 -->
 
-### 代替案 1: <案の名前>
+### Alternative 1: <name>
 
-- **どう動くか**: <1 段落>
-- **失うもの**: <トレードオフ>
-- **却下理由**: <具体的に>
+- **How it works**: <one paragraph>
+- **What you give up**: <the trade-off>
+- **Why rejected**: <concretely>
 
-### 代替案 2: 何もしない
+### Alternative 2: Do nothing
 
-- **どう動くか**: <現状のまま放置した場合に何が起きるか>
-- **却下理由**: <放置コストが許容できない理由>
+- **How it works**: <what happens if this is left alone>
+- **Why rejected**: <why the cost of leaving it is unacceptable>
 
 ## Cross-cutting Concerns
 
-<!-- 該当しない項目は「該当なし」と理由を書く。空欄で飛ばさない。 -->
+<!-- For anything that does not apply, write "N/A" and why. Do not leave blanks. -->
 
-| 観点 | 影響と対応 |
+| Concern | Impact and response |
 | --- | --- |
-| セキュリティ | |
-| プライバシー / 個人情報 | |
-| 可観測性（失敗に気づけるか） | |
-| パフォーマンス | |
-| コスト | |
-| 運用・移行・ロールバック | |
-| 後方互換性 | |
+| Security | |
+| Privacy / personal data | |
+| Observability (will you notice failure) | |
+| Performance | |
+| Cost | |
+| Operations, migration, rollback | |
+| Backwards compatibility | |
 
 ## Acceptance Criteria
 
 <!--
-★ 検証可能な受け入れ条件。Given / When / Then + 検証手段。
-検証手段が書けない項目は受け入れ条件ではない。書き直すか Open Questions に落とす。
+★ Verifiable criteria. Given / When / Then plus the command that proves it.
+A criterion you cannot verify is not a criterion — rewrite it or move it to Open Questions.
 -->
 
-- **AC-1**: Given <前提>, When <操作>, Then <期待結果>
-  - 検証: `<コマンド>`
+- **AC-1**: Given <precondition>, When <action>, Then <expected result>
+  - Verify: `<command>`
 
 ## Implementation Plan
 
-<!-- Issue への分解案。1 項目 = 半日〜2 日。依存関係を明示する。 -->
+<!-- The proposed Issue decomposition. One row = half a day to two days. State dependencies. -->
 
-| # | 作業 | 受け入れ条件 | 依存 | 規模 |
+| # | Work | Acceptance | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | 1 | | AC-1 | — | S |
 
 ## Context for Agents
 
 <!--
-★ AI 向けの制約。探索範囲を設計で縛る。ここが薄いと実装が設計からズレる。
+★ Constraints for AI. Fence in the search space in the design.
+If this is thin, the implementation will drift from the design.
 -->
 
-- **触ってよい場所**:
-- **触ってはいけない場所**:
-- **踏襲するパターン**: <参考にすべき既存ファイル>
-- **使ってよい依存**: <既存のみ / 追加可なら何を>
-- **既知の落とし穴**:
+- **May touch**:
+- **Must not touch**:
+- **Follow this pattern**: <the existing file to imitate>
+- **Dependencies allowed**: <existing only / if additions are allowed, which>
+- **Known traps**:
 
 ## Open Questions
 
-<!-- 未解決の疑問。誰が・いつまでに解くかを書く。空なら「なし」と書く。 -->
+<!-- Still unresolved. Say who resolves it and by when. Write "none" if there are none. -->
 
-- [ ] <疑問> — 担当: @<handle>
+- [ ] <question> — owner: @<handle>
 
 ## Appendix
 
-<!-- 計測結果、詳細な API 定義、調査ログなど。本体を短く保つための置き場。 -->
+<!-- Measurements, full API definitions, research logs. Where detail goes so the body stays short. -->

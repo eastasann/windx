@@ -1,7 +1,7 @@
 ---
 id: ADR-0001
-title: "GitHub を単一の真実とし、外部ツールに決定を置かない"
-status: proposed
+title: "GitHub is the single source of truth; no decisions live in external tools"
+status: accepted
 date: 2026-09-22
 deciders: ["@eastasann"]
 related_docs: ["DD-0001"]
@@ -11,60 +11,67 @@ superseded_by: null
 
 ## Context
 
-開発プロセスの構成要素（課題管理、ロードマップ、設計文書、意思決定記録、レビュー）を
-どこに置くかを決める必要がある。一般的な構成は、課題管理に Jira/Linear、
-文書に Notion/Confluence、コードに GitHub、という分散配置である。
+We have to decide where the pieces of the development process live: issue tracking, the
+roadmap, design documents, decision records, and review. The common arrangement is
+distributed — Jira or Linear for issues, Notion or Confluence for documents, GitHub for code.
 
-一方で本プロジェクトは AI エージェントを主要な実行主体として想定している。
-ここで分散配置は、人間が使う場合とは異なるコストを生む。
+This project, however, treats AI agents as the primary executors. For them, a distributed
+arrangement carries costs that it does not carry for humans.
 
-- エージェントが文脈を集めるために、複数ツールの API と認証を横断する必要がある
-- 各ツールの状態が独立に更新され、どれが最新か機械的に判定できない
-- 「コードと設計文書の乖離」を検出する手段がない（別リポジトリ・別システムにあるため）
-- ツール間リンクは切れやすく、切れたリンクは知識の消失と同義になる
+- An agent must cross several tools, APIs, and authentication systems to assemble context
+- Each tool's state updates independently, and nothing can decide mechanically which is current
+- There is no way to detect drift between code and design documents, because they live in
+  different repositories and different systems
+- Links between tools break easily, and a broken link is equivalent to lost knowledge
 
-コードは GitHub に置くことが確定している。したがって問いは
-「**コード以外もそこに寄せるか、分散させるか**」である。
+Code will live in GitHub; that is settled. So the question is really
+**whether everything else moves there too, or stays distributed.**
 
 ## Decision
 
-課題管理・ロードマップ・設計文書・意思決定記録・レビューのすべてを GitHub 上に置く。
-設計文書と ADR は**コードと同じリポジトリの Markdown ファイル**とし、コードと同じ PR
-プロセスでレビューする。課題管理は Issues、ロードマップは Projects (v2) と Milestones を使う。
+Issue tracking, the roadmap, design documents, decision records, and review all live in
+GitHub. Design documents and ADRs are **Markdown files in the same repository as the code**,
+reviewed through the same pull request process. Issues handle tracking; Projects (v2) and
+Milestones handle the roadmap.
 
-決定・状態・根拠を GitHub の外（チャット、スプレッドシート、外部文書ツール）に
-永続化しない。同期の会話で決めたことは、GitHub 上に書き戻すまで確定として扱わない。
+No decision, state, or rationale is persisted outside GitHub — not in chat, a spreadsheet, or
+an external document tool. Anything settled in a synchronous conversation is not treated as
+settled until it is written back into GitHub.
 
 ## Consequences
 
-### 良い結果
+### Good outcomes
 
-- エージェントが単一の認証・単一の API で全文脈に到達できる
-- 設計文書とコードが同じ PR・同じ履歴に載るため、乖離を CI で検出できる
-- 決定の根拠が `git log` と PR に永続化され、6 か月後に追跡できる
-- ツール間の同期作業と、同期漏れによる不整合が原理的に発生しない
+- An agent reaches the whole context through one authentication and one API
+- Design documents and code ride the same PR and the same history, so drift is detectable in CI
+- The rationale for a decision persists in `git log` and in PRs, traceable six months later
+- Cross-tool synchronisation, and the inconsistencies from failing to synchronise, cannot occur
 
-### 悪い結果 / 引き受けたコスト
+### Bad outcomes / costs accepted
 
-- **Issues と Projects の表現力は専用ツールに劣る。** 工数集計、依存グラフの可視化、
-  スプリントのバーンダウンなどは自前で作るか、諦めることになる
-- **非エンジニアの参加障壁が上がる。** Markdown と PR を要求するため、
-  企画・営業などが直接書き込むには学習コストがある
-- **GitHub への単一障害点依存。** 障害時に課題管理も文書も参照できなくなる
-- **Projects (v2) の自動化は GitHub の仕様変更に追随する必要がある**
+- **Issues and Projects are less expressive than dedicated tools.** Effort rollups,
+  dependency graphs, and sprint burndowns must be built by hand or given up
+- **The barrier for non-engineers rises.** Markdown and PRs carry a learning cost for
+  product, sales, and others who would otherwise contribute directly
+- **A single point of dependency on GitHub.** During an outage, neither issue tracking nor
+  the documents are reachable
+- **Projects (v2) automation must track GitHub's own API changes**
 
-### この決定を見直すべき兆候
+### Signals that this should be revisited
 
-- 非エンジニアの参加者が継続的に 3 名以上になり、Issue 起票が滞るようになったとき
-- Projects (v2) で表現できないロードマップ要求（複数リポジトリ横断の依存管理など）が常態化したとき
-- GitHub の障害が月次で業務を止めるようになったとき
+- Non-engineer participants reach three or more on an ongoing basis and Issue filing stalls
+- Roadmap requirements that Projects (v2) cannot express (cross-repository dependency
+  management, say) become routine
+- GitHub outages start stopping work on a monthly basis
 
 ## Alternatives Considered
 
-- **Jira/Linear + Notion + GitHub の分散構成**: 各ツールの表現力は高いが、エージェントが
-  文脈を集める際に 3 系統の認証と API を必要とし、状態の整合をどのツールも保証できない。
-  最新性を機械的に判定できない点が、AI 駆動では致命的と判断した。
-- **設計文書だけ別リポジトリに置く**: コードと文書の権限分離はできるが、
-  「実装 PR と同じ PR で doc を as-built 更新する」運用ができなくなり、乖離検出を失う。
-- **設計文書を GitHub Wiki に置く**: レビューが PR に乗らず、履歴も追いにくい。
-  CI で構造検証をかけることもできない。
+- **Jira/Linear + Notion + GitHub, distributed**: each tool is more expressive, but an agent
+  needs three authentication systems and three APIs to assemble context, and no tool can
+  guarantee consistency across them. Being unable to decide currency mechanically is fatal
+  under AI-driven work.
+- **Design documents in a separate repository**: this separates permissions cleanly, but it
+  makes "update the doc to as-built in the same PR as the implementation" impossible, which
+  loses drift detection.
+- **Design documents in the GitHub Wiki**: review does not ride a PR, history is harder to
+  follow, and structural validation cannot run in CI.

@@ -1,120 +1,121 @@
-# 04. レビュー規約
+# 04. Review standard
 
-## レビューの目的は「間違い探し」ではない
+## Review is not a hunt for mistakes
 
-AI 駆動では、構文エラー・型エラー・慣習からの逸脱は CI とリンタが捕まえる。
-人間のレビューがやるべきことは 3 つだけ。
+Under AI-driven development, syntax errors, type errors, and convention drift are caught
+by CI and linters. Human review has exactly three jobs.
 
-1. **意図の確認** — 解こうとしている問題は正しいか
-2. **構造の確認** — この抽象・境界・インターフェースは半年後に耐えるか
-3. **見落としの指摘** — doc にも CI にも現れない前提の欠落
+1. **Confirm the intent** — is this the right problem to solve
+2. **Confirm the structure** — will this abstraction, boundary, or interface survive six months
+3. **Catch the omission** — a missing assumption that appears in neither the doc nor CI
 
-> 人間が「ここのインデントが」と言っているなら、それはリンタの設定漏れであって、レビューではない。
+> If a human is saying "the indentation here is off", that is a linter misconfiguration,
+> not a review.
 
 ---
 
-## design doc レビュー（G1）
+## Design doc review (G1)
 
-### 進め方
+### How it runs
 
-| 手順 | 誰 | 内容 |
+| Step | Who | What |
 | --- | --- | --- |
-| 1 | Agent | doc のみの PR を作成。`status: in-review` |
-| 2 | Agent | PR 本文の冒頭に **Decision Points を転記** |
-| 3 | Reviewer | Decision Points に対してコメント。**doc 全文を精読する義務はない** |
-| 4 | Owner | 各 Decision Point に決着をつける（採用案と理由をコメント） |
-| 5 | Agent | 決着を doc に反映し、Decision Point に `**決定**: A（<理由>）` を追記 |
-| 6 | Owner | `status: approved` にしてマージ |
+| 1 | Agent | Opens a doc-only PR. `status: in-review` |
+| 2 | Agent | **Copies the Decision Points into the top of the PR body** |
+| 3 | Reviewer | Comments on the Decision Points. **No obligation to read the whole doc** |
+| 4 | Owner | Settles each Decision Point, with the chosen option and the reasoning |
+| 5 | Agent | Reflects the outcome in the doc as `**Decision**: A (<reason>)` |
+| 6 | Owner | Sets `status: approved` and merges |
 
-### レビュアが見るべき 7 問
+### The seven questions a reviewer asks
 
-1. **Non-Goals は十分か。** 書かれていない「やらないこと」はないか
-2. **Alternatives は本物か。** 却下理由が「複雑だから」で終わっていないか
-3. **一番安い案が検討されているか。** 「何もしない」「既存機能で代用」は候補に入っているか
-4. **Acceptance Criteria は検証できるか。** 検証コマンドが書かれているか
-5. **失敗したらどうなるか。** ロールバック・段階導入の道はあるか
-6. **誰が運用するか。** 運用コストの引き受け手が決まっているか
-7. **この doc だけ読んで実装できるか。** 暗黙の前提が残っていないか（AI はそれを埋められない）
+1. **Are the Non-Goals sufficient?** Is there an unstated "we will not do this"?
+2. **Are the alternatives real?** Does any rejection stop at "too complex"?
+3. **Was the cheapest option considered?** Are "do nothing" and "use what exists" on the list?
+4. **Can the acceptance criteria be verified?** Is there a command for each?
+5. **What happens if it fails?** Is there a rollback or a staged rollout?
+6. **Who operates it?** Has someone accepted the operational cost?
+7. **Could you build it from this doc alone?** Any assumption left implicit — an AI cannot fill it in.
 
 ### SLA
 
-| doc の規模 | 初回レビュー期限 |
+| Doc size | First review due |
 | --- | --- |
-| one-pager | 1 営業日 |
-| 通常の DD | 2 営業日 |
-| `risk/high` 付き | 3 営業日（レビュア 2 名） |
+| one-pager | 1 business day |
+| Normal DD | 2 business days |
+| Tagged `risk/high` | 3 business days, 2 reviewers |
 
-期限を超えたら Owner が督促するか、**Decision Points を暫定決定して前に進める**
-（暫定であることを doc に明記し、後から覆せるようにする）。**止めっぱなしが最悪。**
+Past the deadline the Owner either chases it or **settles the Decision Points provisionally
+and moves on** — noting in the doc that it is provisional so it can be revisited.
+**Stalling is the worst outcome.**
 
 ---
 
-## コードレビュー（G2）
+## Code review (G2)
 
-### レビュアが見るべきこと / 見なくてよいこと
+### What to look at, and what to leave alone
 
-| 見る | 見なくてよい（CI に任せる） |
+| Look at | Leave to CI |
 | --- | --- |
-| doc の設計どおりか | フォーマット・インデント |
-| doc の範囲を超えていないか | 型の整合性 |
-| 抽象の置き方・責務の分割 | lint ルールの遵守 |
-| テストが「振る舞い」を検証しているか | テストが通っているか |
-| エラー処理・境界条件の扱い | import の並び |
-| 命名が既存コードと揃っているか | 行長 |
+| Does it match the doc's design | Formatting and indentation |
+| Does it stay inside the doc's scope | Type consistency |
+| Placement of abstractions, split of responsibility | Lint rules |
+| Do the tests verify *behaviour* | Whether tests pass |
+| Error handling and boundary conditions | Import ordering |
+| Naming consistent with existing code | Line length |
 
-CI に任せられる項目を人間が指摘しているなら、**CI を直すのが正しい対応**である。
+If a human is flagging something CI could flag, **fixing CI is the correct response**.
 
-### AI 生成コード特有の観点
+### Things specific to AI-written code
 
-- **もっともらしい嘘**: 実在しない API を呼んでいないか（型チェックと実行で確認）
-- **過剰な抽象**: 1 箇所でしか使わないインターフェースを作っていないか
-- **既存の再発明**: 既にあるユーティリティを再実装していないか
-- **テストの空回り**: アサートがモックの返り値を確認しているだけになっていないか
-- **範囲外の変更**: 「ついでに直した」は doc / Issue の範囲外なら差し戻す
+- **Plausible lies**: calls to APIs that do not exist (typecheck and run it)
+- **Over-abstraction**: an interface with exactly one caller
+- **Reinvention**: reimplementing a utility that already exists
+- **Hollow tests**: assertions that only confirm a mock's return value
+- **Out-of-scope changes**: "fixed this while I was here" — send it back if the doc or Issue did not ask
 
-最後の項目は特に重要。**スコープクリープは AI 駆動で最も起きやすい劣化**である。
+That last one matters most. **Scope creep is the most likely degradation under AI-driven work.**
 
-### 指摘の重み付け
+### Weighting comments
 
-コメントの先頭にラベルを付け、対応義務を明示する。
+Prefix each comment so the obligation is explicit.
 
-| ラベル | 意味 | 対応義務 |
+| Prefix | Meaning | Obligation |
 | --- | --- | --- |
-| `[blocker]` | これがあるとマージできない | 必須 |
-| `[question]` | 意図が分からない | 回答必須（コード変更は不要かもしれない） |
-| `[suggestion]` | こうした方がよいと思う | 任意。見送る場合は理由を 1 行返す |
-| `[nit]` | 好みの問題 | 任意。返信不要 |
+| `[blocker]` | Cannot merge with this present | Required |
+| `[question]` | I don't understand the intent | An answer is required; a code change may not be |
+| `[suggestion]` | I think this would be better | Optional. If declining, give a one-line reason |
+| `[nit]` | Taste | Optional. No reply needed |
 
-ラベルのない指摘は `[suggestion]` として扱う。
+An unprefixed comment is treated as `[suggestion]`.
 
-### 反対意見の扱い
+### Handling disagreement
 
-- 議論が 2 往復で決着しないなら、**同期の会話に切り替える**。ただし**結論は必ず PR に書き戻す**
-- 設計方針に関わる反対なら、G2 で押し切らず **G1 に差し戻す**（doc を更新して再レビュー）
-- 決着した内容が将来も効く判断なら、**ADR に昇格させる**（[08-adr.md](08-adr.md)）
+- If two rounds do not settle it, **move to a synchronous conversation** — but **write the conclusion back into the PR**
+- If the objection is about the approach, do not push through at G2. **Send it back to G1** (update the doc, review again)
+- If the outcome will matter in the future, **promote it to an ADR** ([08-adr.md](08-adr.md))
 
-> GitHub に書き戻されなかった議論は、起きなかったことと同じ。
+> A discussion that was never written back into GitHub did not happen.
 
 ---
 
-## AI にレビューさせる
+## Letting AI review
 
-CI で AI レビューを走らせてよい。ただし**位置づけを固定する**。
+AI review in CI is fine, as long as **its position is fixed**.
 
-- AI レビューは **CI の一部**であり、人間レビューの代替ではない
-- AI の指摘は「**バグ報告**」として扱う。検証して、直すか、直さない理由を 1 行返す
-- AI レビューが `nit` / `optional` と明示した指摘は、**それ単独で push を起こさない**
-  （次のコード変更のついでに拾う）
-- AI の承認は G2 の承認要件を満たさない。**承認は常に人間**
+- AI review is **part of CI**, not a substitute for human review
+- Treat its findings as **bug reports**: verify, then fix, or give a one-line reason not to
+- A finding the AI marks `nit` or `optional` **does not by itself justify a push** — pick it up with the next code change
+- An AI approval does not satisfy the G2 approval requirement. **Approval is always human.**
 
 ---
 
-## レビューが詰まったときの診断
+## Diagnosing a stuck review
 
-| 症状 | 真因 | 対処 |
+| Symptom | Real cause | Fix |
 | --- | --- | --- |
-| PR が大きすぎて読めない | Issue 分解の粒度が粗い | [05](05-issues-roadmap.md) の粒度規約に戻す |
-| 同じ指摘が繰り返される | 規約が文書化されていない | CLAUDE.md かリンタに落とす |
-| レビューが always 遅い | レビュアが 1 人に集中 | 領域ごとに Reviewer を分散 |
-| 実装後に設計論争が起きる | G1 を飛ばしている | design doc 要否の判定を見直す |
-| 「とりあえず LGTM」が増えた | 受け入れ条件が曖昧で判断できない | AC を検証可能な形に直す |
+| The PR is too big to read | Issues are decomposed too coarsely | Return to the granularity rules in [05](05-issues-roadmap.md) |
+| The same comment keeps recurring | The convention is undocumented | Move it into CLAUDE.md or a linter |
+| Review is always slow | One person carries all of it | Spread reviewers by area |
+| Design arguments erupt after the build | G1 is being skipped | Revisit the design-doc test |
+| "Sure, LGTM" is spreading | The acceptance criteria are too vague to judge against | Rewrite them to be verifiable |

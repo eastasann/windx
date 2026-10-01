@@ -1,0 +1,52 @@
+name: project-sync
+
+# Syncs Issue labels and state into GitHub Projects (v2) fields.
+# Implements DD-0001 #10 (DP-5, DP-6) and ADR-0004; works for a user-owned or an
+# organisation-owned project.
+#
+# GITHUB_TOKEN cannot write to Projects v2 for either ownership type, so this needs a
+# PROJECTS_TOKEN secret. Setup: docs/process/09-setup-checklist.md section 2.
+on:
+  issues:
+    types: [opened, reopened, closed, labeled, unlabeled]
+  pull_request_target:
+    types: [opened, reopened, closed]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number to sync"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Sync Projects fields
+    runs-on: ubuntu-latest
+    # Without the token there is nothing to do; skip rather than fail every Issue event.
+    if: github.event_name == 'workflow_dispatch' || github.event.issue != null
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Sync
+        env:
+          PROJECTS_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          PROJECT_OWNER: ${{ vars.PROJECT_OWNER }}
+          PROJECT_OWNER_TYPE: ${{ vars.PROJECT_OWNER_TYPE }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ -z "$PROJECTS_TOKEN" ] || [ -z "$PROJECT_OWNER" ]; then
+            echo "PROJECTS_TOKEN or PROJECT_OWNER is unset; skipping."
+            echo "Setup: docs/process/09-setup-checklist.md section 2."
+            exit 0
+          fi
+          python3 scripts/project_sync.py --issue "$ISSUE_NUMBER" --event "$EVENT_NAME"

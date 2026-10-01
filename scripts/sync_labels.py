@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-""".github/labels.yml の内容を GitHub のラベルに同期する。
+"""Sync .github/labels.yml to the repository's GitHub labels.
 
-    python3 scripts/sync_labels.py --dry-run      # 差分の確認のみ
-    python3 scripts/sync_labels.py                # 実際に同期
-    python3 scripts/sync_labels.py --prune        # 定義にないラベルも削除する
+    python3 scripts/sync_labels.py --dry-run      # show what is defined, change nothing
+    python3 scripts/sync_labels.py                # sync
+    python3 scripts/sync_labels.py --prune        # also delete labels not in the file
 
-gh CLI と GH_TOKEN（または gh auth login 済み）が必要。
-依存ライブラリなし（labels.yml は本スクリプト内の最小パーサで読む）。
+Needs the gh CLI and GH_TOKEN (or a completed `gh auth login`).
+No third-party dependencies: labels.yml is read by the minimal parser below.
 
-安全側の既定として、定義にないラベルは削除しない。既存 Issue に付いた
-ラベルを不用意に消さないため、--prune は明示的に指定したときだけ動く。
+The safe default is to leave labels that are not defined here alone, so that labels
+already attached to Issues are never removed by accident. --prune only runs when asked.
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def unquote(value: str) -> str:
 
 
 def parse_labels(text: str) -> tuple[list[dict], list[str]]:
-    """labels.yml のうち「- key: value」形式の部分集合だけを読む。"""
+    """Read only the "- key: value" subset of labels.yml."""
     labels: list[dict] = []
     errors: list[str] = []
     current: dict | None = None
@@ -48,10 +48,10 @@ def parse_labels(text: str) -> tuple[list[dict], list[str]]:
             labels.append(current)
             stripped = stripped[2:].strip()
         elif current is None:
-            errors.append(f"{lineno} 行目: リスト項目の外に内容がある: {raw!r}")
+            errors.append(f"line {lineno}: content outside a list item: {raw!r}")
             continue
         if ":" not in stripped:
-            errors.append(f"{lineno} 行目: ':' がない: {raw!r}")
+            errors.append(f"line {lineno}: no ':' present: {raw!r}")
             continue
         key, _, value = stripped.partition(":")
         current[key.strip()] = unquote(value)
@@ -64,18 +64,18 @@ def validate(labels: list[dict]) -> list[str]:
     for i, label in enumerate(labels, start=1):
         name = label.get("name", "")
         if not name:
-            errors.append(f"{i} 番目のラベルに name がない")
+            errors.append(f"label #{i} has no name")
             continue
         if not NAME_RE.match(name):
-            errors.append(f"{name!r}: 名前は英小文字・数字・'/._-' のみ（プレフィックス規約のため）")
+            errors.append(f"{name!r}: names may use lowercase letters, digits and '/._-' only (prefix convention)")
         if name in seen:
-            errors.append(f"{name!r}: 名前が重複している")
+            errors.append(f"{name!r}: duplicate name")
         seen.add(name)
         color = label.get("color", "")
         if not COLOR_RE.match(color):
-            errors.append(f"{name!r}: color は 6 桁の 16 進数（'#' なし）。実際: {color!r}")
+            errors.append(f"{name!r}: color must be 6 hex digits without '#'; got {color!r}")
         if not label.get("description"):
-            errors.append(f"{name!r}: description が空（ラベルの意味は必ず書く）")
+            errors.append(f"{name!r}: description is empty (always say what the label means)")
     return errors
 
 
@@ -86,15 +86,15 @@ def gh(*args: str) -> subprocess.CompletedProcess:
 def existing_labels() -> dict[str, dict]:
     result = gh("label", "list", "--limit", "200", "--json", "name,color,description")
     if result.returncode != 0:
-        print(f"gh label list に失敗: {result.stderr.strip()}", file=sys.stderr)
+        print(f"gh label list failed: {result.stderr.strip()}", file=sys.stderr)
         sys.exit(1)
     return {label["name"]: label for label in json.loads(result.stdout or "[]")}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--dry-run", action="store_true", help="差分を表示するだけ（gh を呼ばない）")
-    parser.add_argument("--prune", action="store_true", help="labels.yml にないラベルを削除する")
+    parser.add_argument("--dry-run", action="store_true", help="print the definitions only; never calls gh")
+    parser.add_argument("--prune", action="store_true", help="delete labels that are not in labels.yml")
     args = parser.parse_args()
 
     labels, parse_errors = parse_labels(LABELS_FILE.read_text(encoding="utf-8"))
@@ -103,12 +103,12 @@ def main() -> int:
         for error in errors:
             print(f"ERROR .github/labels.yml: {error}")
         return 1
-    print(f".github/labels.yml: {len(labels)} 件のラベル定義を読み込んだ")
+    print(f".github/labels.yml: loaded {len(labels)} label definition(s)")
 
     if args.dry_run:
         for label in labels:
             print(f"  {label['name']:<24} #{label['color']}  {label['description']}")
-        print("\n--dry-run のため GitHub への同期は行わない。")
+        print("\n--dry-run: nothing was synced to GitHub.")
         return 0
 
     current = existing_labels()
@@ -118,17 +118,17 @@ def main() -> int:
         found = current.get(name)
         if found is None:
             result = gh("label", "create", name, "--color", color, "--description", description)
-            action = "作成"
+            action = "create"
             created += 1
         elif found["color"].upper() != color or (found.get("description") or "") != description:
             result = gh("label", "edit", name, "--color", color, "--description", description)
-            action = "更新"
+            action = "update"
             updated += 1
         else:
             unchanged += 1
             continue
         if result.returncode != 0:
-            print(f"ERROR {name} の{action}に失敗: {result.stderr.strip()}", file=sys.stderr)
+            print(f"ERROR failed to {action} {name}: {result.stderr.strip()}", file=sys.stderr)
             return 1
         print(f"  {action}: {name}")
 
@@ -137,14 +137,14 @@ def main() -> int:
         for name in sorted(set(current) - defined):
             result = gh("label", "delete", name, "--yes")
             if result.returncode != 0:
-                print(f"ERROR {name} の削除に失敗: {result.stderr.strip()}", file=sys.stderr)
+                print(f"ERROR failed to delete {name}: {result.stderr.strip()}", file=sys.stderr)
                 return 1
-            print(f"  削除: {name}")
+            print(f"  delete: {name}")
             deleted += 1
 
-    print(f"\n作成 {created} / 更新 {updated} / 変更なし {unchanged} / 削除 {deleted}")
+    print(f"\ncreated {created} / updated {updated} / unchanged {unchanged} / deleted {deleted}")
     if not args.prune:
-        print("定義にないラベルは残してある（消すなら --prune）。")
+        print("Labels not in the file were left alone (use --prune to delete them).")
     return 0
 
 

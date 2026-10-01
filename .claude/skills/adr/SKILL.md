@@ -1,117 +1,116 @@
 ---
 name: adr
-description: 確定した意思決定を ADR（Architecture Decision Record）として記録する。「ADR を書いて」「この決定を記録して」と言われたとき、または技術選定・アーキテクチャ境界・横断的方針が決まったとき、「やらない」と決めたときに使う。
+description: Record a settled decision as an ADR (Architecture Decision Record). Use when asked to write an ADR or record a decision, when a technology choice, architectural boundary, or cross-cutting policy is settled, or when something is decided against.
 ---
 
-# 意思決定を ADR として記録する
+# Recording a decision as an ADR
 
-規約: `docs/process/08-adr.md`
+Conventions: `docs/process/08-adr.md`
 
-**ADR は議事録であり、計画書ではない。** design doc が「どう作るか」を書くのに対し、
-ADR は「**なぜそう決めたか**」を残す。1 ページ以内。
-
----
-
-## 書くべきか判定する
-
-### 書く
-
-- 技術選定（言語、フレームワーク、DB、外部サービス）
-- アーキテクチャの境界（サービス分割、レイヤ構成、依存の向き）
-- 横断的な方針（認証方式、エラー処理、ログ形式、命名規約）
-- **やらないと決めたこと**（「マイクロサービス化しない」など）
-- プロセス自体の決定
-
-### 書かない
-
-- 実装詳細（変数名、関数分割）
-- 1 つの機能の中で閉じる判断（DD に書けば足りる）
-- 明日変えられる決定
-
-**判定の目安**: 「6 か月後に新しく入った人が『なぜこうなってるの？』と聞くか？」
+**An ADR is minutes, not a plan.** Where a design doc says *how we build it*, an ADR records
+**why we decided it**. One page or less.
 
 ---
 
-## 手順
+## Decide whether to write one
 
-### 1. 作成する
+### Write one for
+
+- Technology choices (language, framework, database, external service)
+- Architectural boundaries (service split, layering, direction of dependencies)
+- Cross-cutting policy (auth, error handling, log format, naming)
+- **Things decided against** (e.g. "we will not split into microservices")
+- Decisions about the process itself
+
+### Do not write one for
+
+- Implementation detail (variable names, function split)
+- A judgment contained within one feature (the DD covers it)
+- A decision you could change tomorrow
+
+**The test**: "In six months, will a new joiner ask why this is the way it is?"
+
+---
+
+## Steps
+
+### 1. Create it
 
 ```bash
-python3 scripts/new_doc.py adr "<決定を能動態で>" --slug <english-slug>
+python3 scripts/new_doc.py adr "<the decision, in active voice>" --slug <english-slug>
 ```
 
-**タイトルは決定そのもの**にする。
+**The title is the decision itself.**
 
-- ❌ 「セッション保存先について」「認証の検討」
-- ✅ 「セッション保存先に Redis を採用する」「サービス分割を当面行わない」
+- ❌ "About the session store", "Auth investigation"
+- ✅ "Adopt Redis for the session store", "Do not split into services for now"
 
-### 2. 各節を書く
+### 2. Write the sections
 
 #### Context
 
-どういう状況で、何を決める必要があったか。2〜3 段落。
-制約（期限、人員、既存システム、法令）があれば書く。
-**決定の内容をここに書かない。**
+The situation, and what had to be decided. Two or three paragraphs. Note any constraints
+(deadline, staffing, existing systems, regulation). **Do not put the decision here.**
 
 #### Decision
 
-**能動態・断定形で 1〜3 文。**
+**Active voice, declarative, one to three sentences.**
 
-- ❌ 「Redis がよいと思われる」
-- ✅ 「セッションは Redis に保存する」
+- ❌ "Redis seems preferable"
+- ✅ "Sessions are stored in Redis"
 
 #### Consequences
 
-**「悪い結果 / 引き受けたコスト」を必ず 2 項目以上書く。**
-CI (`validate_docs.py`) がこれを検証して落とす。
+**Always name two or more bad outcomes / costs accepted.**
+CI (`validate_docs.py`) fails the ADR otherwise.
 
-> トレードオフのない決定は存在しない。書けないなら、検討が足りていない。
+> There is no decision without a trade-off. If you cannot name one, you have not thought it through.
 
-「この決定を見直すべき兆候」は**観測可能な形**で書く。
-「状況が変わったら」ではなく「非エンジニアの参加者が 3 名以上になったら」のように。
+Write "signals that this should be revisited" **observably** — not "if things change" but
+"if non-engineer participants reach three or more".
 
 #### Alternatives Considered
 
-1 案 2〜3 行。詳細は関連 design doc に譲る。
+Two or three lines each. Leave the detail to the related design doc.
 
-### 3. 検証して提出する
+### 3. Validate and submit
 
 ```bash
 python3 scripts/validate_docs.py
 python3 scripts/check_links.py
 ```
 
-- **単独 PR** で出す。PR タイトル: `docs(adr): ADR-xxxx <title>`
-- 実装 PR より**先に**マージする（決定してから作る）
-- マージ時点で人間が `status: accepted` にする
+- **Its own PR**, titled `docs(adr): ADR-xxxx <title>`
+- Merge it **before** the implementation PR — decide, then build
+- A human moves `status` to `accepted` on merge
 
 ---
 
-## 議論から ADR を起こす場合
+## Writing an ADR from a discussion
 
-PR コメントや Issue の議論から ADR を書くとき:
+When the source is a PR comment thread or an Issue:
 
-1. **議論の経緯を勝手に要約して歪めない。** 元のコメントを引用する
-2. 反対意見があったなら、それを `Alternatives Considered` か `Consequences` に残す
-3. 決着していない論点を「決定」として書かない。未決なら `status: proposed` のままにする
-
----
-
-## 既存 ADR を覆すとき
-
-**過去の ADR を書き換えない。** 手順:
-
-1. 新しい ADR を書く。Context に「ADR-xxxx を見直す必要が生じた」と書く
-2. 新 ADR の front matter に `supersedes: ["ADR-xxxx"]`
-3. 旧 ADR の `status` を `superseded` に、`superseded_by` に新 ID を書く
-   — **この 2 行だけが旧 ADR への許される編集**
+1. **Do not summarise the history into something distorted.** Quote the original comments
+2. If there was dissent, keep it in `Alternatives Considered` or `Consequences`
+3. Never write an unsettled point as decided. Leave `status: proposed` while it is open
 
 ---
 
-## やってはいけないこと
+## Superseding an existing ADR
 
-- `accepted` にする（**それは Owner の署名行為**。AI は `proposed` で出す）
-- 「悪い結果」を書かない、または 1 項目で済ませる
-- 過去の ADR の本文を書き換える
-- 決着していない論点を決定として書く
-- 1 ページを超える（超えたらそれは design doc）
+**Never rewrite a past ADR.** The procedure:
+
+1. Write a new ADR. Its Context says "ADR-xxxx needed revisiting"
+2. The new ADR's front matter gets `supersedes: ["ADR-xxxx"]`
+3. The old one moves to `superseded` with `superseded_by` set —
+   **those two lines are the only edit ever permitted**
+
+---
+
+## Never
+
+- Set it to `accepted` (**that is the Owner's act of signature**; submit it as `proposed`)
+- Omit the bad outcomes, or give only one
+- Rewrite the body of a past ADR
+- Write an unsettled point as decided
+- Run past one page (if it does, it is a design doc)

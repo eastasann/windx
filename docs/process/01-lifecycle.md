@@ -1,124 +1,128 @@
-# 01. ライフサイクルと 4 つのゲート
+# 01. Lifecycle and the four gates
 
-## 設計思想
+## The idea
 
-従来の開発プロセスは「**工程**」で区切られていた（要件定義 → 設計 → 実装 → テスト）。
-AI 駆動では工程の所要時間が大きく変わるため、工程で区切るのは意味を失う。
+Traditional processes are divided by **phase** — requirements, design, build, test.
+Under AI-driven development the duration of each phase shifts so much that dividing by
+phase stops meaning anything.
 
-本プロセスは代わりに「**人間の判断が必要な地点**」で区切る。
-これを**ゲート (Gate)** と呼ぶ。ゲート間は AI が連続実行してよい。ゲートでは必ず止まる。
+This process divides by **the points where a human has to decide** instead.
+We call those **gates**. Between gates, AI runs continuously. At a gate, it always stops.
 
-> ゲートとは「進捗報告の場」ではなく「**後戻りが高くつく判断をする場**」である。
-> 判断が不要なら、ゲートを置いてはならない。
+> A gate is not a place to report progress. It is a place to **make a decision that is
+> expensive to reverse**. If no decision is needed, there should be no gate.
 
 ---
 
-## 全体フロー
+## The flow
 
 ```
-        ┌─────────────────────────────────────────────────────────────┐
-        │                                                             │
-  着想 ─┴→ [G0] 問題定義 ─→ [G1] 設計合意 ─→ [G2] 実装承認 ─→ [G3] 出荷判断 ─→ 運用
-             │                │                │                │
-          Issue 起票       Design Doc        Pull Request      Release
-          type/*           DD-xxxx           Closes #n         Milestone
-          priority/*       status: approved  CI green          ADR 更新
-             │                │                │                │
-          【人間】        【人間】          【人間】          【人間】
-          解くべきか?     この設計か?       この実装か?       出してよいか?
-             │                │                │                │
-          【AI】          【AI】            【AI】            【AI】
-          調査・整形      doc起案・代替案    分解・実装・検証   リリースノート
+        ┌──────────────────────────────────────────────────────────────────┐
+        │                                                                  │
+ idea ──┴→ [G0] frame ──→ [G1] design ──→ [G2] build ──→ [G3] ship ──→ operate
+             │               │               │              │
+          open an Issue   Design Doc     Pull Request     Release
+          type/*          DD-xxxx        Closes #n        Milestone
+          priority/*      status:        CI green         ADRs updated
+                          approved
+             │               │               │              │
+          [HUMAN]        [HUMAN]         [HUMAN]        [HUMAN]
+          worth solving? this design?    this code?     ship it?
+             │               │               │              │
+          [AI]           [AI]            [AI]           [AI]
+          research,      draft the doc,  decompose,     release notes
+          shape it       alternatives    build, verify
 ```
 
 ---
 
-## G0 — 問題定義ゲート
+## G0 — Framing gate
 
-**判断すること**: そもそもこれを解くべきか。今か。
+**The decision**: is this worth solving at all, and now?
 
-| | 内容 |
+| | |
 | --- | --- |
-| 入力 | 課題の断片（要望、バグ報告、思いつき、計測結果） |
-| AI の作業 | 再現確認、影響範囲の調査、既存 Issue の重複チェック、Issue 本文の整形 |
-| 成果物 | Issue（`type/*` + `priority/*` ラベル付き） |
-| 人間の判断 | 優先度の確定、却下または保留の判断 |
-| 通過条件 | 「誰が困っているか」と「解けたらどうなるか」が Issue に書かれている |
+| Input | A fragment — a request, a bug report, an idea, a measurement |
+| AI does | Reproduce, scope the impact, check for duplicate Issues, shape the Issue body |
+| Output | An Issue, labelled `type/*` and `priority/*` |
+| Human decides | Priority; whether to reject or defer |
+| Passes when | The Issue says who is hurting and what changes if it's solved |
 
-**ここで止める価値**: 一番安い却下は、着手前の却下。
+**Why stopping here pays**: the cheapest rejection is the one before any work starts.
 
 ---
 
-## G1 — 設計合意ゲート
+## G1 — Design agreement gate
 
-**判断すること**: この設計方針でよいか。Decision Points をどう決めるか。
+**The decision**: is this the right approach, and how do the Decision Points resolve?
 
-| | 内容 |
+| | |
 | --- | --- |
-| 入力 | G0 を通った Issue |
-| AI の作業 | 既存実装の調査、design doc 起案、**代替案 2〜3 案**の提示、Decision Points の抽出 |
-| 成果物 | `docs/design/DD-xxxx-*.md`（PR としてレビュー） |
-| 人間の判断 | **Decision Points への回答**、承認 / 差し戻し |
-| 通過条件 | doc の `status: approved`、Decision Points がすべて解決済み |
+| Input | An Issue that cleared G0 |
+| AI does | Study the existing code, draft the design doc, present **two or three alternatives**, extract the Decision Points |
+| Output | `docs/design/DD-xxxx-*.md`, reviewed as a PR |
+| Human decides | **Answers the Decision Points**; approves or sends it back |
+| Passes when | The doc is `status: approved` and every Decision Point is settled |
 
-**ここで止める価値**: 実装後に設計をひっくり返すコストは、実装前の 10 倍以上。
-AI が実装を速くしても、**間違った設計を速く実装するだけ**になる。
+**Why stopping here pays**: overturning a design after it is built costs ten times more
+than before. Making AI build faster only means **building the wrong design faster**.
 
-design doc が不要な変更（`CLAUDE.md` の判定基準を参照）は、G1 をスキップして G2 へ進む。
+Changes that do not need a design doc (see the test in `CLAUDE.md`) skip G1 and go to G2.
 
 ---
 
-## G2 — 実装承認ゲート
+## G2 — Implementation gate
 
-**判断すること**: この実装を本流に入れてよいか。
+**The decision**: should this land on the main branch?
 
-| | 内容 |
+| | |
 | --- | --- |
-| 入力 | 承認済み design doc、または design doc 不要と判断された Issue |
-| AI の作業 | Issue への分解、実装、テスト作成、CI 緑化、レビュー指摘への対応 |
-| 成果物 | Pull Request（1 PR = 1 Issue） |
-| 人間の判断 | 意図どおりか、doc から逸脱していないか、受け入れ条件を満たすか |
-| 通過条件 | CI 緑、受け入れ条件を満たす証跡、レビュー承認 |
+| Input | An approved design doc, or an Issue judged not to need one |
+| AI does | Decompose into Issues, implement, write tests, get CI green, respond to review |
+| Output | A pull request (1 PR = 1 Issue) |
+| Human decides | Is this the intent; does it stay inside the doc; does it meet the acceptance criteria |
+| Passes when | CI is green, the evidence shows the acceptance criteria met, review approves |
 
-**レビューの見方**: AI 生成コードのレビューでは、**行単位の正しさより「意図と構造」**を見る。
-文法や慣習の逸脱は CI とリンタに任せる。人間は「この抽象は妥当か」「doc の設計に沿っているか」を見る。
-詳細は [04-review.md](04-review.md)。
+**How to read the code**: when reviewing AI-written code, look at **intent and structure**
+rather than line-level correctness. Leave syntax and convention to CI and linters. Humans
+ask "is this abstraction right" and "does it follow the doc". See [04-review.md](04-review.md).
 
 ---
 
-## G3 — 出荷判断ゲート
+## G3 — Ship gate
 
-**判断すること**: 今これを世に出してよいか。
+**The decision**: should this go out into the world now?
 
-| | 内容 |
+| | |
 | --- | --- |
-| 入力 | マージ済みの変更群（Milestone 単位） |
-| AI の作業 | リリースノート生成、変更点の集約、移行手順の確認、ロールバック手順の記述 |
-| 成果物 | GitHub Release + タグ、Milestone クローズ |
-| 人間の判断 | 出荷可否、タイミング |
-| 通過条件 | Milestone 内の Issue が全クローズ、ロールバック手順がある |
+| Input | Merged changes, grouped by Milestone |
+| AI does | Generate release notes, collect the changes, confirm migration steps, write the rollback |
+| Output | A GitHub Release and tag; the Milestone closed |
+| Human decides | Whether and when to ship |
+| Passes when | Every Issue in the Milestone is closed and a rollback path exists |
 
 ---
 
-## ゲート間で AI が自律実行してよい範囲
+## How much AI may run unattended between gates
 
-| 区間 | 自律実行 | 条件 |
+| Stretch | Autonomous | Condition |
 | --- | --- | --- |
-| 着想 → G0 | ✅ 可 | 調査と Issue 起票まで。優先度は人間が付ける |
-| G0 → G1 | ✅ 可 | doc 起案と代替案提示まで。**Decision Points を自分で決めない** |
-| G1 → G2 | ✅ 可 | 承認済み doc の範囲内に限る。範囲外に出そうになったら止まって聞く |
-| G2 → G3 | ⚠️ 条件付き | マージは人間。CI 修正とレビュー対応は自律で可 |
+| idea → G0 | Yes | Research and opening the Issue. A human sets the priority |
+| G0 → G1 | Yes | Drafting and presenting alternatives. **Never settle the Decision Points** |
+| G1 → G2 | Yes | Strictly inside the approved doc. If the work wants to leave it, stop and ask |
+| G2 → G3 | Conditional | Merging is a human act. Fixing CI and answering review is autonomous |
 
 ---
 
-## 実装が doc と食い違ったとき
+## When the implementation disagrees with the doc
 
-実装中に「doc の設計では解けない」と分かることがある。**これは失敗ではなく、正常な発見**。
-次のどちらかを選ぶ。**黙って実装を変えることだけは禁止**。
+Mid-build you sometimes learn the doc's design will not work. **That is not a failure —
+it is a normal discovery.** Pick one of the two below. **Silently changing the
+implementation is the only forbidden option.**
 
-| 乖離の大きさ | 対応 |
+| Size of the drift | What to do |
 | --- | --- |
-| 小（doc の記述が実装詳細レベルで不正確） | 実装 PR に doc の修正を同梱し、PR 本文で「doc をこう直した」と明記 |
-| 大（設計方針・インターフェース・データモデルが変わる） | 実装を止め、**doc を更新して G1 に差し戻す**。新しい Decision Point として提示する |
+| Small (the doc is imprecise at the implementation-detail level) | Fix the doc in the same implementation PR and say so in the PR body |
+| Large (the approach, an interface, or the data model changes) | Stop building. **Update the doc and send it back to G1** as a new Decision Point |
 
-判断に迷ったら大として扱う。
+If you cannot tell which it is, treat it as large.

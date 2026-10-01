@@ -1,49 +1,50 @@
-name: "Spike（時間を区切った調査）"
-description: "判断に必要な情報を得るための調査。成果物は必ず文書です"
+name: "Spike"
+description: "Time-boxed research. The output is always a document"
 title: "[Spike] "
 labels: ["type/spike", "stage/g1-design"]
 body:
   - type: markdown
     attributes:
       value: |
-        Spike は**調査であって実装ではありません**。時間を区切り、成果物を文書として残します。
-        調査の結果、実装が必要になったら別 Issue を起こしてください。
+        A spike is **research, not implementation**. Box the time and leave the output as a document.
+        If the research shows implementation is needed, open a separate Issue.
 
   - type: textarea
     id: question
     attributes:
-      label: 答えを出したい問い
-      description: "**判断に必要な問い**を具体的に。「調べる」ではなく「〜かどうかを判定する」の形で。"
+      label: The question to answer
+      description: "State **the question a decision needs**, as 'determine whether X', not 'look into X'."
       placeholder: |
-        （悪い例）Redis について調べる
-        （良い例）既存 Redis クラスタで想定ピーク 1,200 req/s のセッション書き込みを捌けるか
+        (bad)  Look into Redis
+        (good) Determine whether the existing Redis cluster can absorb the expected peak of
+               1,200 req/s of session writes
     validations:
       required: true
 
   - type: textarea
     id: why
     attributes:
-      label: この答えが何の判断に使われるか
-      description: 関連する Decision Point があれば `DD-xxxx DP-n` の形で。
+      label: Which decision this answer feeds
+      description: Name the Decision Point if there is one, as `DD-xxxx DP-n`.
     validations:
       required: true
 
   - type: dropdown
     id: timebox
     attributes:
-      label: タイムボックス
-      description: これを超えたら、分かったところまでで打ち切って報告します。
-      options: ["2 時間", "半日", "1 日", "2 日"]
+      label: Time box
+      description: Past this, stop and report whatever you have.
+      options: ["2 hours", "half a day", "1 day", "2 days"]
     validations:
       required: true
 
   - type: textarea
     id: deliverable
     attributes:
-      label: 成果物
-      description: どこに何を残すか。**口頭報告は成果物ではありません。**
+      label: Deliverable
+      description: Where what gets written down. **A verbal report is not a deliverable.**
       value: |
-        - [ ] この Issue のコメントに調査結果
-        - [ ] 関連 DD の Appendix に計測データを追記
+        - [ ] Findings as a comment on this Issue
+        - [ ] Measurements appended to the related DD's Appendix
     validations:
       required: true
