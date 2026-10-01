@@ -7,6 +7,7 @@ independent of who owns the project — see ADR-0004.
     python3 scripts/project_sync.py --self-test          # offline: validate the mapping logic
     python3 scripts/project_sync.py --dry-run            # print what would change
     python3 scripts/project_sync.py --issue 12           # sync one Issue
+    python3 scripts/project_sync.py --pr 34              # sync the Issues a PR closes
     python3 scripts/project_sync.py --issue 12 --event labeled
 
 Configuration (environment, usually repository variables):
@@ -175,6 +176,17 @@ query($owner: String!, $repo: String!, $number: Int!) {
 }
 """
 
+PR_QUERY = """
+query($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      number
+      closingIssuesReferences(first: 10) { nodes { number } }
+    }
+  }
+}
+"""
+
 ADD_ITEM = """
 mutation($project: ID!, $content: ID!) {
   addProjectV2ItemById(input: {projectId: $project, contentId: $content}) {
@@ -241,6 +253,12 @@ def self_test() -> int:
     except ConfigError:
         checks.append(("an invalid owner type is rejected", True))
 
+    # The PR path must ask for the Issues a PR closes, so a PR event can set "In Review".
+    checks.append(("the PR query requests closingIssuesReferences",
+                   "closingIssuesReferences" in PR_QUERY and "pullRequest(number: $number)" in PR_QUERY))
+    checks.append(("the Issue query asks only for open linked PRs",
+                   "includeClosedPrs: false" in ISSUE_QUERY))
+
     # Every Status value the mapping can produce must be a documented option.
     documented = {"Inbox", "Triaged", "Designing", "Ready", "In Progress", "In Review", "Done", "Dropped"}
     produced = {status for _, status in LABEL_TO_STATUS} | {"Inbox", "In Review", "Done", "Dropped"}
@@ -270,6 +288,8 @@ def require(name: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--issue", type=int, default=None, help="the Issue number to sync")
+    parser.add_argument("--pr", type=int, default=None,
+                        help="a PR number; syncs every Issue it closes")
     parser.add_argument("--event", default=None, help="the triggering event name (logged only)")
     parser.add_argument("--dry-run", action="store_true", help="resolve and print, but do not mutate")
     parser.add_argument("--self-test", action="store_true", help="validate the mapping offline")
@@ -290,13 +310,17 @@ def main() -> int:
         print("ERROR PROJECT_NUMBER must be an integer", file=sys.stderr)
         return 2
 
-    if args.issue is None:
-        print("ERROR --issue is required (or use --self-test)", file=sys.stderr)
+    if args.issue is None and args.pr is None:
+        print("ERROR one of --issue or --pr is required (or use --self-test)", file=sys.stderr)
+        return 2
+    if args.issue is not None and args.pr is not None:
+        print("ERROR pass either --issue or --pr, not both", file=sys.stderr)
         return 2
 
+    target = f"issue #{args.issue}" if args.issue is not None else f"pr #{args.pr}"
     if args.dry_run and not os.environ.get("PROJECTS_TOKEN"):
         print(f"project: {owner_type}/{project_owner} #{project_number}")
-        print(f"issue:   #{args.issue}" + (f" (event: {args.event})" if args.event else ""))
+        print(f"target:  {target}" + (f" (event: {args.event})" if args.event else ""))
         print("PROJECTS_TOKEN is unset, so nothing was resolved against the API.")
         print("The mapping logic is covered by --self-test.")
         return 0
@@ -321,12 +345,43 @@ def main() -> int:
         return 1
     fields = {f["name"]: f for f in project["fields"]["nodes"] if f.get("name")}
 
+    if args.pr is not None:
+        pr_data = graphql(token, PR_QUERY,
+                          {"owner": repo_owner, "repo": repo_name, "number": args.pr})
+        pull = (pr_data.get("repository") or {}).get("pullRequest")
+        if not pull:
+            print(f"ERROR pull request #{args.pr} not found in {repo_full}", file=sys.stderr)
+            return 1
+        numbers = [n["number"] for n in pull["closingIssuesReferences"]["nodes"]]
+        if not numbers:
+            print(f"pr #{args.pr} closes no Issue; nothing to sync.")
+            return 0
+        print(f"pr #{args.pr} closes: {', '.join('#' + str(n) for n in numbers)}")
+    else:
+        numbers = [args.issue]
+
+    failures = 0
+    for number in numbers:
+        try:
+            sync_issue(token, project, fields, repo_owner, repo_name, number,
+                       owner_type, project_owner, project_number, args)
+        except (RuntimeError, ConfigError) as exc:
+            print(f"ERROR issue #{number}: {exc}", file=sys.stderr)
+            failures += 1
+    if failures:
+        return 1
+    print("OK")
+    return 0
+
+
+def sync_issue(token, project, fields, repo_owner, repo_name, number,
+               owner_type, project_owner, project_number, args) -> None:
+    """Resolve one Issue's desired field values and apply them."""
     issue_data = graphql(token, ISSUE_QUERY,
-                         {"owner": repo_owner, "repo": repo_name, "number": args.issue})
+                         {"owner": repo_owner, "repo": repo_name, "number": number})
     issue = (issue_data.get("repository") or {}).get("issue")
     if not issue:
-        print(f"ERROR issue #{args.issue} not found in {repo_full}", file=sys.stderr)
-        return 1
+        raise RuntimeError(f"issue #{number} not found in {repo_owner}/{repo_name}")
 
     labels = [n["name"] for n in issue["labels"]["nodes"]]
     has_open_pr = any(
@@ -338,14 +393,14 @@ def main() -> int:
     desired.update(fields_for(labels))
 
     print(f"project: {project['title']} ({owner_type}/{project_owner} #{project_number})")
-    print(f"issue:   #{args.issue} {issue['title']!r}" + (f" (event: {args.event})" if args.event else ""))
+    print(f"issue:   #{number} {issue['title']!r}" + (f" (event: {args.event})" if args.event else ""))
     print(f"labels:  {', '.join(labels) or '(none)'}")
     for name, value in desired.items():
         print(f"  {name} -> {value}")
 
     if args.dry_run:
-        print("\n--dry-run: nothing was changed.")
-        return 0
+        print("  --dry-run: nothing was changed.")
+        return
 
     item_id = graphql(token, ADD_ITEM,
                       {"project": project["id"], "content": issue["id"]})[
@@ -365,9 +420,6 @@ def main() -> int:
             "field": field["id"], "option": resolve_option(field, value),
         })
         print(f"  set {name} = {value}")
-
-    print("OK")
-    return 0
 
 
 if __name__ == "__main__":
