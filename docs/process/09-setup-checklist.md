@@ -26,9 +26,32 @@ GH_REPO=eastasann/windx python3 scripts/sync_labels.py
 
 ## 2. GitHub Projects (v2) を作る
 
-設計は [05-issues-roadmap.md](05-issues-roadmap.md)。**GUI 操作が必要**。
+設計は [05-issues-roadmap.md](05-issues-roadmap.md)。
+**DP-5 の決定により、フィールド設定とビューの同期はコード化する**
+（[DD-0001 DP-5](../design/DD-0001-development-process.md#decision-points) / 実装は未着手）。
+ただし次の 2 つは Owner の手作業として残る。
+
+### 2-1. classic PAT を登録する（**コード化の前提条件**）
+
+`eastasann/windx` は個人アカウントなので Project は user-owned になり、
+**`GITHUB_TOKEN` では Projects v2 を操作できない**。
+fine-grained PAT も個人アカウントの Projects 権限を取得できないため、classic PAT が必要。
+
+- [ ] classic PAT を作成する（スコープ: **`project`** と `repo`）
+- [ ] 有効期限を **90 日以内**にする（更新を運用に組み込む）
+- [ ] リポジトリシークレット **`PROJECTS_TOKEN`** として登録する
+- [ ] このトークンを Projects 操作以外に流用しない
+
+> `project` スコープは絞り込めず、`repo` と併せると当該ユーザがアクセスできる
+> 全リポジトリに及ぶ。Project を Organization 所有に移せる時点で移し、
+> `GITHUB_TOKEN` 運用へ切り替えることが望ましい（DD-0001 の Cross-cutting Concerns 参照）。
+
+### 2-2. Project 本体を作る（初回のみ手作業）
 
 - [ ] プロジェクト `windx Roadmap` を作成する
+- [ ] 作成後、フィールドとビューの設定はコード化された同期で行う
+      （未実装のうちは下表を GUI で設定する）
+
 - [ ] カスタムフィールドを追加する
 
 | フィールド | 型 | 値 |
@@ -50,10 +73,16 @@ GH_REPO=eastasann/windx python3 scripts/sync_labels.py
 | **Needs Decision** | Table | `label:agent/needs-human` |
 | **Agent Queue** | Table | `label:agent/ready`、優先度順 |
 
-- [ ] 組み込みワークフローを有効にする
+- [ ] 自動化を設定する（**暫定: 組み込みワークフロー / 将来: コード化**）
   - Issue 作成 → Project に追加、`Status = Inbox`
   - Issue クローズ → `Status = Done`
   - PR がリンクされたらオープン → `Status = In Review`
+  - `agent/ready` 付与 → `Status = Ready`（`Agent Queue` に現れる）
+
+> DP-5=B の決定により、最終的にこれらは `.github/workflows/project-sync.yml` と
+> `scripts/project_sync.py` に移す（DD-0001 Implementation Plan #10、未着手）。
+> 実装までは組み込みワークフローで運用し、**設定内容をここに書き残しておく**
+> （コード化時の仕様になる）。
 
 > **Needs Decision と Agent Queue の分離が本プロセスの要**。
 > 人間は前者だけを見て、AI は後者だけを拾う。
