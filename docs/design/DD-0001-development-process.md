@@ -7,7 +7,7 @@ owner: "@eastasann"
 reviewers: ["@eastasann"]
 created: 2026-09-22
 updated: 2026-10-01
-tracking_issue: null
+tracking_issue: "#1"
 related_adrs: ["ADR-0001", "ADR-0002", "ADR-0003", "ADR-0004"]
 supersedes: []
 superseded_by: null
