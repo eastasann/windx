@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""design doc / one-pager / ADR を採番して作成する。
+"""Create a numbered design doc, one-pager, or ADR.
 
-    python3 scripts/new_doc.py design   "セッション保存先の変更"
-    python3 scripts/new_doc.py onepager "ログ形式を JSON に揃える"
-    python3 scripts/new_doc.py adr      "セッション保存先に Redis を採用する"
+    python3 scripts/new_doc.py design   "Change the session store" --slug session-store
+    python3 scripts/new_doc.py onepager "Switch logs to JSON"      --slug json-logging
+    python3 scripts/new_doc.py adr      "Adopt Redis for sessions" --slug session-store-redis
 
-オプション:
-    --owner @handle   front matter の owner（既定: git config user.name）
-    --slug foo-bar    ファイル名の slug（既定: タイトルから自動生成）
+Options:
+    --owner @handle   the front matter owner (default: derived from git config)
+    --slug foo-bar    the filename slug (default: derived from the title)
 
-作成後、索引 README に行を追加し、次にやることを表示する。
+After creating the file it appends a row to the index README and prints what to do next.
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ KINDS = {
 
 
 def slugify(title: str) -> str:
-    """ASCII の slug を作る。日本語タイトルなど ASCII 化できない場合は空を返す。"""
+    """Build an ASCII slug. Returns empty when the title has no ASCII to work with."""
     normalized = unicodedata.normalize("NFKD", title)
     ascii_only = normalized.encode("ascii", "ignore").decode("ascii").lower()
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_only).strip("-")
@@ -69,7 +69,7 @@ def fill(template: str, *, doc_id: str, title: str, owner: str, today: str) -> s
 
 
 def append_to_index(index: Path, row: str) -> bool:
-    """索引 README の表の末尾に行を追加する。表が見つからなければ False。"""
+    """Append a row to the last table in the index README. False if no table was found."""
     if not index.exists():
         return False
     lines = index.read_text(encoding="utf-8").splitlines()
@@ -89,19 +89,19 @@ def main() -> int:
     parser.add_argument("kind", choices=sorted(KINDS))
     parser.add_argument("title")
     parser.add_argument("--owner", default=None, help="@github-handle")
-    parser.add_argument("--slug", default=None, help="ファイル名に使う slug")
+    parser.add_argument("--slug", default=None, help="slug used in the filename")
     args = parser.parse_args()
 
     prefix, directory, template_path = KINDS[args.kind]
     if not template_path.exists():
-        print(f"テンプレートがない: {template_path}", file=sys.stderr)
+        print(f"template not found: {template_path}", file=sys.stderr)
         return 1
 
     slug = args.slug or slugify(args.title)
     if not slug:
         print(
-            "タイトルから slug を作れなかった（日本語タイトルなど）。\n"
-            f'  例: python3 scripts/new_doc.py {args.kind} "{args.title}" --slug session-store',
+            "could not derive a slug from the title (non-ASCII titles need one).\n"
+            f'  e.g. python3 scripts/new_doc.py {args.kind} "{args.title}" --slug session-store',
             file=sys.stderr,
         )
         return 1
@@ -109,7 +109,7 @@ def main() -> int:
     doc_id = next_id(directory, prefix)
     path = directory / f"{doc_id}-{slug}.md"
     if path.exists():
-        print(f"すでに存在する: {path}", file=sys.stderr)
+        print(f"already exists: {path}", file=sys.stderr)
         return 1
 
     today = dt.date.today().isoformat()
@@ -128,15 +128,21 @@ def main() -> int:
         guide = "docs/process/08-adr.md"
     indexed = append_to_index(directory / "README.md", row)
 
-    print(f"作成: {path.relative_to(ROOT)}")
-    print(f"索引: {'更新した' if indexed else '手動で追記すること → ' + str((directory / 'README.md').relative_to(ROOT))}")
-    print("\n次にやること:")
-    print(f"  1. {guide} を読んで各節を埋める")
+    print(f"created: {path.relative_to(ROOT)}")
+    if indexed:
+        print("index:   updated")
+    else:
+        print(f"index:   add the row by hand -> {(directory / 'README.md').relative_to(ROOT)}")
+    print("\nNext:")
+    print(f"  1. Read {guide} and fill in each section")
     if prefix == "DD":
-        print("  2. Decision Points に『選択肢 / AI の推奨 / 覆すコスト』を必ず書く")
-        print("  3. Alternatives Considered に実行可能な案を 2〜3 案書く（『何もしない』を含める）")
-    print("  4. python3 scripts/validate_docs.py で検証")
-    print(f"  5. 単独 PR で提出（タイトル: docs({'design' if prefix == 'DD' else 'adr'}): {doc_id} {args.title}）")
+        print("  2. Give every Decision Point its options, your recommendation, and the cost of reversal")
+        print("  3. Write two or three workable alternatives, including 'do nothing'")
+    else:
+        print("  2. Name two or more bad outcomes in Consequences")
+    print("  4. Validate with: python3 scripts/validate_docs.py")
+    kind_label = "design" if prefix == "DD" else "adr"
+    print(f"  5. Submit as its own PR, titled: docs({kind_label}): {doc_id} {args.title}")
     return 0
 
 

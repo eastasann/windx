@@ -1,124 +1,127 @@
-# 07. 完了の定義（DoR / DoD）
+# 07. Definition of done (DoR / DoD)
 
-## 原則
+## The principle
 
-> **検証できない完了は、完了ではない。**
+> **A done you cannot verify is not done.**
 
-AI は「それらしく動くもの」を高速に作る。だから品質の担保は
-「注意深く作ること」ではなく「**検証可能な形で作らせ、検証すること**」に移る。
-
----
-
-## Definition of Ready（DoR）— 着手してよい条件
-
-Issue に `agent/ready` を付けてよいのは、次を**すべて**満たすときだけ。
-
-- [ ] **解く問題が 1 文で書ける**（「〜の改善」ではなく「〜のとき〜にならない」）
-- [ ] **受け入れ条件が検証可能な形で書かれている**（Given / When / Then + 検証手段）
-- [ ] **影響範囲が特定されている**（触るファイル・モジュール）
-- [ ] design doc が必要なら **`status: approved`** で、Issue から参照されている
-- [ ] **未解決の Decision Point がない**
-- [ ] `size/xl` ではない（大きすぎるなら先に分割する）
-- [ ] 依存 Issue があれば、それがクローズ済みか着手可能
-
-**`agent/ready` は AI の自律範囲を決める唯一のスイッチ。** 安易に付けると、
-AI は曖昧な指示を勝手に解釈して実装する。**曖昧さは、着手前に潰す。**
+An AI can quickly build something that *looks* like it works. So quality no longer rests on
+"being careful". It rests on **making it produce verifiable output, and verifying it**.
 
 ---
 
-## Definition of Done（DoD）— マージしてよい条件
+## Definition of Ready — may we start?
 
-### すべての PR に共通
+Apply `agent/ready` to an Issue only when **all** of these hold.
 
-- [ ] `Closes #<issue>` が書かれている（1 PR = 1 Issue）
-- [ ] **受け入れ条件をすべて満たし、検証結果が PR 本文にある**
-- [ ] 新しい振る舞いにテストがある / バグ修正なら**先に失敗するテストを書いた**
-- [ ] CI が緑（**テストの skip / disable / 削除で緑にしていない**）
-- [ ] doc / Issue の範囲外の変更が入っていない
-- [ ] レビュー承認がある（`risk/high` は 2 名）
-- [ ] 秘密情報（トークン、鍵、内部ホスト名）が含まれていない
+- [ ] **The problem fits in one sentence** (not "improve X" but "when X, Y should not happen")
+- [ ] **Acceptance criteria are verifiable** (Given / When / Then + the command)
+- [ ] **The affected surface is identified** (files, modules)
+- [ ] If a design doc is needed, it is **`status: approved`** and referenced from the Issue
+- [ ] **No unresolved Decision Point**
+- [ ] It is not `size/xl` (split it first)
+- [ ] Any dependency Issue is closed or ready to start
 
-### design doc 由来の変更に追加
-
-- [ ] PR 本文に `Design doc: DD-xxxx`
-- [ ] 実装が doc の設計と一致している（乖離があるなら doc を同じ PR で更新した）
-- [ ] doc の `status` を `implemented` に更新した（最後の Issue のとき）
-- [ ] 恒久的な判断が生まれたなら ADR を書いた
-
-### 挙動が変わる変更に追加
-
-- [ ] ロールバック手順がある（コード revert で戻らないものは特に）
-- [ ] 可観測性がある（失敗したときに気づける手段）
-- [ ] 移行が必要なら、移行手順と**移行中に両方の状態が共存できるか**を確認した
-
-### `risk/high` に追加
-
-- [ ] レビュア 2 名の承認
-- [ ] 失敗時の影響範囲を PR 本文に明記
-- [ ] 段階導入（フラグ / カナリア）の可否を検討した
+**`agent/ready` is the single switch controlling AI autonomy, and a human throws it.**
+Applied carelessly, the AI interprets a vague instruction on its own and builds that.
+**Kill the ambiguity before work starts.**
 
 ---
 
-## 受け入れ条件の書き方
+## Definition of Done — may we merge?
 
-### 良い例
+### Every PR
+
+- [ ] `Closes #<issue>` is present (1 PR = 1 Issue)
+- [ ] **Every acceptance criterion met, with the verification output in the PR body**
+- [ ] New behaviour has tests / a bug fix **started from a failing test**
+- [ ] CI is green (**not by skipping, disabling, or deleting a test**)
+- [ ] No changes outside the doc's or Issue's scope
+- [ ] Review approved (two reviewers for `risk/high`)
+- [ ] No secrets (tokens, keys, internal hostnames)
+
+### Additionally, for a design-doc change
+
+- [ ] `Design doc: DD-xxxx` in the PR body
+- [ ] The implementation matches the doc (or the doc was updated in this same PR)
+- [ ] The doc's `status` moved to `implemented` (on the last Issue)
+- [ ] Any durable decision was recorded as an ADR
+
+### Additionally, when behaviour changes
+
+- [ ] A rollback path exists (especially where reverting the code is not enough)
+- [ ] Observability exists — you will notice when it fails
+- [ ] If a migration is needed, the steps exist and **both states can coexist during it**
+
+### Additionally, for `risk/high`
+
+- [ ] Two reviewer approvals
+- [ ] The blast radius of failure stated in the PR body
+- [ ] Staged rollout (flag / canary) considered
+
+---
+
+## Writing acceptance criteria
+
+### Good
 
 ```markdown
-- **AC-1**: Given 有効期限切れのセッション, When `/api/me` を呼ぶ,
-  Then 401 を返し、監査ログに `session_expired` が 1 行残る
-  - 検証: `pytest tests/auth/test_session_expiry.py -q`
+- **AC-1**: Given an expired session, When `/api/me` is called,
+  Then it returns 401 and writes one `session_expired` audit line
+  - Verify: `pytest tests/auth/test_session_expiry.py -q`
 
-- **AC-2**: Given 同時 500 接続, When セッション検証を行う,
-  Then p99 レイテンシが 50ms 未満
-  - 検証: `make bench-auth`（出力の p99 行を PR に貼る）
+- **AC-2**: Given 500 concurrent connections, When sessions are validated,
+  Then p99 latency stays under 50ms
+  - Verify: `make bench-auth` (paste the p99 line into the PR)
 ```
 
-### 悪い例と、その直し方
+### Bad, and how to fix it
 
-| 悪い例 | 何が問題か | 直し方 |
+| Bad | What's wrong | Fix |
 | --- | --- | --- |
-| 「正しく動作すること」 | 「正しい」が定義されていない | 入力と期待出力を書く |
-| 「パフォーマンスが改善すること」 | 測れない | 指標・閾値・測定方法を書く |
-| 「既存機能が壊れないこと」 | 全部が対象になる | 壊れやすい箇所を特定して個別に書く |
-| 「レビューで問題がないこと」 | 判断が人依存 | 機械的に判定できる形に直す |
-| 「エラーハンドリングをすること」 | 何のエラーか不明 | 具体的な異常系を列挙する |
+| "It works correctly" | "Correct" is undefined | State the input and the expected output |
+| "Performance improves" | Not measurable | State the metric, the threshold, the method |
+| "Nothing existing breaks" | Scope is everything | Name the fragile spots individually |
+| "Review finds no problems" | Depends on the person | Restate it so a machine can judge |
+| "Handle errors" | Which errors | Enumerate the specific failure cases |
 
-**検証手段が書けない受け入れ条件は、受け入れ条件ではない。**
-書き直すか、`Open Questions` に落として先に解決する。
-
----
-
-## 品質ゲート（CI）
-
-本リポジトリで現在動いているチェック:
-
-| ワークフロー | チェック内容 |
-| --- | --- |
-| [`docs-lint.yml`](../../.github/workflows/docs-lint.yml) | DD / ADR の front matter、必須見出し、ID とファイル名の整合、索引の整合 |
-| [`labels.yml`](../../.github/workflows/labels.yml) | `labels.yml` の内容を GitHub のラベルに同期 |
-
-プロダクトコードが入った時点で、次を追加する。
-
-| 追加すべきチェック | 目的 |
-| --- | --- |
-| lint / format | 人間がレビューで指摘しなくて済むようにする |
-| typecheck | AI の「実在しない API 呼び出し」を捕まえる |
-| unit test | 振る舞いの回帰検出 |
-| 依存の脆弱性スキャン | 供給鎖リスク |
-| 秘密情報スキャン | doc / コードへの秘密混入防止 |
-
-> レビューで人間が繰り返し指摘していることがあれば、それは CI に落とすべき項目である。
-> **人間のレビューは、CI に書けないことだけに使う。**
+**A criterion with no way to verify it is not a criterion.** Rewrite it, or move it to
+`Open Questions` and resolve it first.
 
 ---
 
-## 「完了」の反対側：やらないと決めること
+## Quality gates (CI)
 
-Issue をクローズする理由は 2 つしかない。
+Running today:
 
-1. **Done** — DoD を満たした
-2. **Dropped** — やらないと決めた。**理由をコメントに書いてからクローズする**
+| Workflow | Checks |
+| --- | --- |
+| [`docs-lint.yml`](../../.github/workflows/docs-lint.yml) | DD/ADR front matter, required headings, ID–filename agreement, index agreement, relative links, label definitions |
+| [`pr-checks.yml`](../../.github/workflows/pr-checks.yml) | PR traceability (`Closes #n`, `Design doc:`) |
+| [`labels.yml`](../../.github/workflows/labels.yml) | Syncs `labels.yml` to GitHub labels |
+| [`project-sync.yml`](../../.github/workflows/project-sync.yml) | Syncs labels and state to Projects fields |
 
-無言のクローズ、放置による自然消滅は禁止。
-**「やらないと決めたこと」も、決定として記録に残す価値がある。**
-同じ提案が半年後にまた出てきたとき、その記録が判断を速くする。
+Add these once product code lands:
+
+| To add | Why |
+| --- | --- |
+| lint / format | So humans never raise it in review |
+| typecheck | Catches an AI calling an API that does not exist |
+| unit tests | Regression detection on behaviour |
+| dependency vulnerability scan | Supply-chain risk |
+| secret scanning | Keeps secrets out of docs and code |
+
+> If a human keeps raising the same point in review, that point belongs in CI.
+> **Human review is for what cannot be written as a check.**
+
+---
+
+## The other side of done: deciding not to
+
+There are only two reasons to close an Issue.
+
+1. **Done** — it met the DoD
+2. **Dropped** — we decided not to. **Write the reason in a comment before closing**
+
+Silent closes and death by neglect are banned.
+**"What we decided not to do" is worth keeping as a decision.**
+When the same proposal returns in six months, that record makes the call fast.

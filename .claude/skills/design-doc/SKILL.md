@@ -1,130 +1,131 @@
 ---
 name: design-doc
-description: 課題から design doc をドラフトする。代替案を複数提示し、人間が判断すべき点を Decision Points として抽出する。「設計文書を書いて」「DD を起案して」「この変更の設計を考えて」と言われたとき、または実装前に設計の合意が必要な変更に着手するときに使う。
+description: Draft a design doc from a problem. Presents several alternatives and extracts the points a human must decide as Decision Points. Use when asked to write a design doc, draft a DD, or think through the design of a change, or whenever a change needs design agreement before implementation.
 ---
 
-# design doc を起案する
+# Drafting a design doc
 
-**目的は結論を出すことではない。人間が判断できる材料を揃えることである。**
+**The goal is not to reach the conclusion. It is to assemble what a human needs to decide.**
 
-規約: `docs/process/03-design-doc.md`
+Conventions: `docs/process/03-design-doc.md`
 
 ---
 
-## 手順
+## Steps
 
-### 1. 要否を判定する
+### 1. Decide whether one is needed
 
-次のいずれかに当てはまるなら DD を書く。
+Write a DD if any of these hold.
 
-- 複数のコンポーネント／サービスにまたがる
-- 公開 API・データスキーマ・永続データの形を変える
-- 後から変更するコストが高い（移行が必要になる）
-- 妥当な代替案が 2 つ以上あり、選択に判断が要る
-- セキュリティ・プライバシー・課金・可用性に影響する
-- 見積もりが 3 人日／3 セッションを超える
+- It spans more than one component or service
+- It changes a public API, a schema, or the shape of persisted data
+- It is expensive to change later (a migration would be needed)
+- Two or more reasonable alternatives exist and picking one takes judgment
+- It touches security, privacy, billing, or availability
+- The estimate exceeds roughly 3 person-days / 3 sessions
 
-1〜3 日規模で判断が軽いなら `onepager`。半日以内で設計判断がないなら Issue 本文だけでよい。
-**迷ったら書く側に倒す。**
+For 1–3 days with light judgment, use `onepager`. Under half a day with no design
+judgment, the Issue body is enough. **When in doubt, write it.**
 
-### 2. 調査する（**先に必ずやる**）
+### 2. Research first — always
 
-設計を書き始める前に、事実を集める。
+Gather facts before writing any design.
 
-- 既存コードの該当箇所と、そこで使われているパターン
-- 関連する過去の DD / ADR（`docs/design/README.md`, `docs/adr/README.md`）
-- 関連 Issue と過去の PR（同じ議論が既にされていないか）
-- 数値で語れる箇所は計測する（推測を「根拠」と書かない）
+- The relevant existing code and the patterns in use there
+- Past DDs and ADRs (`docs/design/README.md`, `docs/adr/README.md`)
+- Related Issues and past PRs — has this argument already happened?
+- Measure whatever can be stated in numbers; never present a guess as evidence
 
-調査せずに書いた doc は、もっともらしいだけで判断材料にならない。
+A doc written without research is plausible and useless for deciding.
 
-### 3. 採番して作成する
+### 3. Create it
 
 ```bash
-python3 scripts/new_doc.py design "<タイトル>" --slug <english-slug>
+python3 scripts/new_doc.py design "<title>" --slug <english-slug>
 ```
 
-日本語タイトルからは slug を作れないので `--slug` を必ず指定する。
+`--slug` is required for any title that is not plain ASCII.
 
-### 4. 各節を埋める
+### 4. Fill in the sections
 
-以下は特に手を抜かない。
+Do not cut corners on these.
 
 #### Non-Goals
 
-**空にしない。** これは丁寧さではなく、自分自身の実装時のスコープ境界になる。
-「今回はやらない」と「そもそもやらない」を分けて書く。
+**Never leave it empty.** This is not courtesy — it becomes the scope boundary for your own
+implementation later. Separate "not this time" from "not ever".
 
-#### Decision Points ← ここが doc の本体
+#### Decision Points — the body of the doc
 
-判断が必要な分岐**だけ**を列挙する。各項目に必ず:
+List **only** the forks that need judgment. Each one carries:
 
-- **選択肢を 2 つ以上**（「やる／やらない」も立派な 2 択）
-- **自分の推奨と、その根拠** — 数値や既存コードの事実を挙げる。推奨を出さずに丸投げしない
-- **覆すコスト**（低／中／高）と、なぜそう言えるか
-- **決定**: は**空のまま残す**（人間が埋める欄。自分で埋めてはならない）
+- **Two or more options** ("do it / don't" is a legitimate pair)
+- **Your recommendation and its reasoning** — cite numbers or facts about the existing code. Never hand the question over bare
+- **The cost of reversal** (low / medium / high) and why you can say that
+- **Decision**: left **empty** — that field is the human's. Never fill it in yourself
 
-覆すコストが低いなら `[推奨で進行・事後変更可]` と明記してよい。
-**判断コストは、覆すコストに見合わせる。**
+If reversal is cheap, you may mark it `[proceed on the recommendation, revisable]`.
+**Match the cost of deciding to the cost of reversing.**
 
 #### Alternatives Considered
 
-**実行可能な代替案を 2〜3 案。** 執筆は安いのだから、建前で済ませない。
+**Two or three workable alternatives.** Writing is cheap, so drop the pretence.
 
-- **「何もしない」を必ず候補に入れる**（一番安い案だから）
-- 却下理由を「複雑だから」で終わらせない。**何がどう複雑で、誰がそのコストを払うのか**
-- Decision Points で扱った分岐と重複してもよい（読者の導線が違う）
+- **Always include "do nothing"** — it is the cheapest option
+- Never let a rejection stop at "too complex". Say **what is complex and who pays that cost**
+- Overlapping with a Decision Point is fine; the reader's path through them differs
 
 #### Acceptance Criteria
 
-Given / When / Then + **検証コマンド**。
+Given / When / Then plus **the verifying command**.
 
 ```markdown
-- **AC-1**: Given 期限切れのセッション, When `/api/me` を呼ぶ, Then 401 を返す
-  - 検証: `pytest tests/auth/test_session_expiry.py -q`
+- **AC-1**: Given an expired session, When `/api/me` is called, Then it returns 401
+  - Verify: `pytest tests/auth/test_session_expiry.py -q`
 ```
 
-検証手段が書けない項目は受け入れ条件ではない。書き直すか `Open Questions` に落とす。
+A criterion you cannot verify is not a criterion. Rewrite it or move it to `Open Questions`.
 
 #### Context for Agents
 
-実装時の自分（または別セッション）への制約。ここが薄いと実装が設計からズレる。
+Constraints for whoever implements this — including a future you in another session. If this
+is thin, the implementation will drift from the design.
 
-- 触ってよい場所／触ってはいけない場所（パスで具体的に）
-- 踏襲するパターン（**参考にすべき既存ファイルを名指しで**）
-- 使ってよい依存（追加が必要なら Decision Point にする）
-- 既知の落とし穴
+- Where it may and may not touch (concrete paths)
+- Patterns to follow (**name the existing file**)
+- Permitted dependencies (adding one is a Decision Point)
+- Known traps
 
-### 5. 検証する
+### 5. Validate
 
 ```bash
 python3 scripts/validate_docs.py
 python3 scripts/check_links.py
 ```
 
-### 6. 単独 PR で提出する
+### 6. Submit as its own PR
 
-- **実装を含めない。** doc だけの PR にする
-- PR タイトル: `docs(design): DD-xxxx <title>`
-- PR 本文の冒頭に **Decision Points を転記**する（GitHub 上で議論できるように）
-- `Design doc: DD-xxxx` と、追跡 Issue があれば `Closes #n` を書く
-
----
-
-## 完了報告に必ず含めること
-
-1. doc のパスと ID
-2. **Decision Points の一覧**（人間に判断してほしいこと）
-3. 推奨と、その根拠の要約
-4. 未解決の Open Questions
+- **No implementation.** The PR contains the doc only
+- PR title: `docs(design): DD-xxxx <title>`
+- **Copy the Decision Points into the top of the PR body** so they can be discussed on GitHub
+- Add `Design doc: DD-xxxx`, and `Closes #n` if there is a tracking Issue
 
 ---
 
-## やってはいけないこと
+## Always include in your final report
 
-- **Decision Points の `決定` 欄を自分で埋める** — 承認は人間の署名行為
-- Decision Points を空にしてレビュー依頼を出す
-- 代替案を 1 つしか書かない
-- 調査せずに設計を書く（推測を根拠として提示する）
-- doc PR に実装を混ぜる
-- 承認前に実装を始める
+1. The doc's path and ID
+2. **The list of Decision Points** — what you want a human to decide
+3. Your recommendation for each, with the reasoning in brief
+4. Any unresolved Open Questions
+
+---
+
+## Never
+
+- **Fill in a Decision Point's `Decision` field yourself** — approval is a human act of signature
+- Request review with the Decision Points empty
+- Write only one alternative
+- Write a design without researching (presenting a guess as evidence)
+- Mix implementation into a doc PR
+- Start implementing before approval

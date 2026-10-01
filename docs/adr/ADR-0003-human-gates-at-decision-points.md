@@ -1,7 +1,7 @@
 ---
 id: ADR-0003
-title: "人間のレビューを doc 全体ではなく Decision Points に限定する"
-status: proposed
+title: "Human review is limited to Decision Points, not whole docs"
+status: accepted
 date: 2026-09-22
 deciders: ["@eastasann"]
 related_docs: ["DD-0001"]
@@ -11,62 +11,73 @@ superseded_by: null
 
 ## Context
 
-AI がコードと文書を生成する量は、人間がレビューできる量を容易に超える。
-従来型の「生成物を人間が全部読んで承認する」運用は、次のいずれかに必ず着地する。
+The volume of code and documents an AI produces easily exceeds what humans can review. The
+traditional arrangement — a human reads everything and approves — always lands in one of two
+places.
 
-1. **レビューがボトルネックになる** — AI の速度が活きず、待ち行列が伸びる
-2. **形式的な承認に堕ちる** — 読まずに LGTM を出す。承認の意味が失われる
+1. **Review becomes the bottleneck**, the AI's speed is wasted, and the queue grows
+2. **Approval decays into a formality**, LGTM without reading, and approval loses its meaning
 
-どちらも避けたい。そこで「人間は何を読むべきか」を定義し直す必要がある。
+Both are worth avoiding, and the second is more dangerous because quality degradation surfaces
+late. So "what should a human read" has to be redefined.
 
-観察すると、設計文書の中で**後から覆すコストが高い記述はごく一部**である。
-大半は、その分岐が決まれば機械的に決まる記述か、実装中に安く修正できる記述である。
-高コストなのは「分岐の選択そのもの」であり、それは doc 全体に散らばっている。
+Observation: in a design document, **very little of the text is expensive to reverse**. Most of
+it either follows mechanically once a fork is settled, or can be corrected cheaply during
+implementation. What is expensive is **the choice at a fork**, and those are scattered
+throughout the doc.
 
 ## Decision
 
-人間のレビュー対象を、doc 全体ではなく **Decision Points（DP）** に限定する。
+Human review is scoped to the **Decision Points**, not the whole document.
 
-- design doc に `## Decision Points` 節を必須とし、判断が必要な分岐をそこに集約する
-- 各 DP には **選択肢 2 つ以上**、**AI の推奨と根拠**、**覆すコスト**を必ず書く
-- Owner は DP に回答することをもって doc を承認する。全文の精読は義務としない
-- **覆すコストが低い DP は `[推奨で進行・事後変更可]` と明記し、人間の判断を省略してよい**
-- `status: approved` / `implemented` の doc に未決の DP が残っていないことを CI が検証する
+- A `## Decision Points` section is mandatory in a design doc and collects every fork that
+  needs judgment
+- Each one carries **two or more options**, **the AI's recommendation with reasoning**, and
+  **the cost of reversal**
+- The Owner approves the doc by answering the Decision Points. Reading it end to end is not an
+  obligation
+- **A Decision Point that is cheap to reverse is marked `[proceed on the recommendation, revisable]`
+  and skips human judgment**
+- CI verifies that no unresolved Decision Point remains in a doc at `status: approved` or
+  `implemented`
 
-すなわち、**判断コストを「覆すコスト」に比例させる**ことを原則とする。
+In short, the principle is to make **the cost of deciding proportional to the cost of reversing**.
 
 ## Consequences
 
-### 良い結果
+### Good outcomes
 
-- 人間のレビュー時間が、doc の長さではなく**分岐の数**に比例するようになる
-- AI が doc を長く書いても、人間のコストが増えない（執筆コストの低下を活かせる）
-- 「何を承認したのか」が DP への回答として明示的に記録される
-- 未決の判断を抱えたまま実装に進むことを、CI が機械的に防げる
+- Human review time scales with **the number of forks**, not the length of the doc
+- The AI can write a long doc without increasing the human cost, so cheaper writing is usable
+- "What was approved" is explicitly recorded as the answers to the Decision Points
+- Proceeding to implementation with an open decision is mechanically prevented in CI
 
-### 悪い結果 / 引き受けたコスト
+### Bad outcomes / costs accepted
 
-- **DP の抽出漏れが致命的になる。** AI が分岐を DP として挙げなければ、
-  人間はそれを判断する機会を失う。doc 全体を読まない運用では気づけない
-- **AI の推奨に人間が引きずられる（アンカリング）。** 推奨と根拠を併記する運用は
-  判断を速くするが、同時に反対意見を出しにくくする
-- **「覆すコスト」の見積もりを AI が誤ると、重い判断が省略される**
-- 全文を読まないため、DP 以外の箇所にある事実誤認は実装まで発見されない
+- **A missed Decision Point becomes critical.** If the AI does not surface a fork, the human
+  never gets the chance to decide it — and in a practice where the whole doc is not read, nobody
+  notices
+- **Humans get anchored by the AI's recommendation.** Presenting a recommendation with reasoning
+  speeds the decision and simultaneously makes dissent harder
+- **If the AI misjudges the cost of reversal, a heavy decision gets skipped**
+- Because the doc is not read end to end, factual errors outside the Decision Points survive
+  until implementation
 
-### この決定を見直すべき兆候
+### Signals that this should be revisited
 
-- 実装後に「そんな設計だと思っていなかった」という手戻りが四半期に 2 回以上起きたとき
-  （DP の抽出漏れが常態化している）
-- Owner の回答が AI の推奨と 95% 以上一致し続けるとき
-  （判断がアンカリングで形骸化している可能性がある）
-- 「覆すコスト: 低」と書かれた判断の撤回に、実際には高コストがかかった事例が出たとき
+- Rework of the form "I did not think that was the design" happens twice or more in a quarter
+  (missed Decision Points have become routine)
+- The Owner's answers agree with the AI's recommendation 95% of the time or more
+  (judgment may have decayed into anchoring)
+- A decision marked "cost of reversal: low" turns out to have been expensive to withdraw
 
 ## Alternatives Considered
 
-- **doc 全体を人間が精読して承認する**: 承認の意味は最も強いが、レビューがボトルネックになり、
-  実際には形式的な LGTM に堕ちる。AI の生成量の前では持続しない。
-- **AI レビュアに一次レビューをさせ、人間は最終承認のみ**: レビュー量は捌けるが、
-  「後から覆すコストが高い判断」を AI が代行することになり、説明責任の所在が曖昧になる。
-  AI レビューは CI の一部として併用するが、人間のゲートの代替にはしない。
-- **サンプリングレビュー（doc の一部をランダムに精読）**: 品質の統計的な把握には有効だが、
-  「この分岐をどちらに決めるか」という判断そのものは代替できない。
+- **Humans read and approve the whole doc**: the strongest form of approval, but review becomes
+  the bottleneck and in practice decays into formal LGTM. It does not survive the volume AI
+  produces.
+- **An AI reviewer does the first pass, humans only final approval**: handles the volume, but it
+  delegates the expensive-to-reverse judgments to an AI and blurs accountability. AI review is
+  used alongside, as part of CI, never as the human gate.
+- **Sampling review (read a random portion in depth)**: useful for a statistical read on
+  quality, but it cannot substitute for the judgment of which way to settle a fork.

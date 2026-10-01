@@ -1,31 +1,31 @@
 <!--
-1 PR = 1 Issue。チェック項目は削除せず、埋めるか「該当なし: <理由>」と書いてください。
-完了の定義: docs/process/07-definition-of-done.md
+1 PR = 1 Issue. Do not delete the checklist items — fill them in, or write "N/A: <reason>".
+Definition of done: docs/process/07-definition-of-done.md
 -->
 
-## この PR で何をしたか
+## What this PR does
 
-<!-- 2〜3 文。diff を読まなくても意図が分かるように。 -->
+<!-- Two or three sentences. The intent should be clear without reading the diff. -->
 
-## トレーサビリティ
+## Traceability
 
 - Closes #
-- Design doc: <!-- DD-xxxx / 不要な場合は「不要（<理由>）」 -->
-- 関連 ADR: <!-- ADR-xxxx / なし -->
+- Design doc: <!-- DD-xxxx, or "not needed (<reason>)" -->
+- Related ADR: <!-- ADR-xxxx, or none -->
 
-## 受け入れ条件の検証
+## Verification of the acceptance criteria
 
 <!--
-Issue / doc の AC ごとに、検証コマンドと**実行結果**を貼ってください。
-「通っているはず」は不可。実行した出力を貼ります。
+For each AC in the Issue or doc, give the command and **its actual output**.
+"It should pass" is not acceptable. Paste what you ran.
 -->
 
-| AC | 検証コマンド | 結果 |
+| AC | Command | Result |
 | --- | --- | --- |
-| AC-1 | `` | ✅ / ❌ |
+| AC-1 | `` | pass / fail |
 
 <details>
-<summary>実行ログ</summary>
+<summary>Run log</summary>
 
 ```text
 
@@ -33,36 +33,36 @@ Issue / doc の AC ごとに、検証コマンドと**実行結果**を貼って
 
 </details>
 
-## 設計との整合
+## Agreement with the design
 
-- [ ] design doc の設計どおりに実装した
-- [ ] doc と乖離した箇所は、**同じ PR で doc を更新した**（更新箇所: ）
-- [ ] 設計方針そのものが変わる乖離は**なかった**（あった場合は G1 に差し戻す）
-- [ ] doc / Issue の**範囲外の変更を含んでいない**
+- [ ] Implemented as the design doc describes
+- [ ] Where it drifted, **the doc was updated in this same PR** (what changed: )
+- [ ] There was **no drift in the approach itself** (if there was, it goes back to G1)
+- [ ] No changes outside the scope of the doc or Issue
 
-## チェックリスト
+## Checklist
 
-- [ ] `Closes #<issue>` を書いた（1 PR = 1 Issue）
-- [ ] 受け入れ条件をすべて満たし、検証結果を上に貼った
-- [ ] 新しい振る舞いにテストがある／バグ修正は**先に失敗するテストを書いた**
-- [ ] CI が緑（**テストの skip / disable / 削除で緑にしていない**）
-- [ ] 秘密情報（トークン・鍵・内部ホスト名）を含まない
+- [ ] `Closes #<issue>` is present (1 PR = 1 Issue)
+- [ ] Every acceptance criterion is met, with the verification above
+- [ ] New behaviour has tests / a bug fix **started from a failing test**
+- [ ] CI is green (**not by skipping, disabling, or deleting a test**)
+- [ ] No secrets (tokens, keys, internal hostnames)
 
-## 挙動が変わる場合のみ
+## Only when behaviour changes
 
-- [ ] ロールバック手順がある: <!-- revert で戻る / 以下の手順が必要: -->
-- [ ] 失敗に気づける手段がある（ログ・メトリクス・アラート）
-- [ ] 移行が必要な場合、移行中に新旧の状態が共存できることを確認した
+- [ ] A rollback path exists: <!-- revert is enough / these steps are needed: -->
+- [ ] Failure is observable (logs, metrics, alerts)
+- [ ] If a migration is needed, the old and new states can coexist during it
 
-## risk/high の場合のみ
+## Only for risk/high
 
-- [ ] レビュア 2 名の承認を得る
-- [ ] 失敗時の影響範囲: <!-- 誰に、どういう影響が出るか -->
-- [ ] 段階導入（フラグ／カナリア）の可否を検討した: <!-- 採用 / 不採用（理由） -->
+- [ ] Two reviewer approvals
+- [ ] Blast radius of failure: <!-- who is affected, and how -->
+- [ ] Staged rollout (flag / canary) considered: <!-- adopted / declined (reason) -->
 
-## レビュアへ
+## For the reviewer
 
 <!--
-特に見てほしい点、判断を仰ぎたい点。
-指摘には [blocker] / [question] / [suggestion] / [nit] を付けてください（docs/process/04-review.md）。
+What you especially want looked at, and anything you want a decision on.
+Prefix comments with [blocker] / [question] / [suggestion] / [nit] (docs/process/04-review.md).
 -->

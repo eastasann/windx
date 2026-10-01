@@ -1,123 +1,123 @@
-# 08. ADR 運用規約
+# 08. ADR standard
 
-ADR（Architecture Decision Record）は「**なぜそう決めたか**」の永続記録。
+An ADR (Architecture Decision Record) is the durable record of **why we decided this**.
 
-## design doc との違い
+## How it differs from a design doc
 
 | | design doc (DD) | ADR |
 | --- | --- | --- |
-| 問い | **どう作るか** | **なぜそう決めたか** |
-| 時制 | 実装前の計画 | **決定の瞬間の記録** |
-| 寿命 | 実装が終われば参照は減る | **数年参照される** |
-| 分量 | 1〜5 ページ | **1 ページ以内** |
-| 更新 | as-built に更新する | **更新しない**（覆すときは新 ADR で `superseded`） |
-| 数 | 機能ごと | 決定ごと（DD 1 本から 0〜3 本出る） |
+| The question | **How we build it** | **Why we decided it** |
+| Tense | A plan, before the build | **A record of the moment of decision** |
+| Lifetime | Rarely read once built | **Read for years** |
+| Length | 1–5 pages | **One page or less** |
+| Updates | Updated to as-built | **Never updated** — supersede it with a new ADR |
+| Count | One per feature | One per decision (0–3 come out of one DD) |
 
-> DD は計画書、ADR は**議事録**。ADR を後から書き換えることは、歴史の改竄にあたる。
-
----
-
-## いつ書くか
-
-次のような、**後から「なぜ？」と聞かれる決定**を書く。
-
-- 技術選定（言語、フレームワーク、DB、外部サービス）
-- アーキテクチャの境界（サービス分割、レイヤ構成、依存の向き）
-- 横断的な方針（認証方式、エラー処理、ログ形式、命名規約）
-- **やらないと決めたこと**（「マイクロサービス化しない」など）
-- プロセスそのものの決定（本リポジトリの `ADR-0001` など）
-
-書かなくてよいもの:
-
-- 実装詳細（変数名、関数分割）
-- 1 つの機能の中で閉じる判断（DD に書けば足りる）
-- 明日変えられる決定（覆すコストが安いもの）
-
-**判定の目安**: 「6 か月後に新しく入った人が『なぜこうなってるの？』と聞くか？」
-聞くなら ADR を書く。
+> A DD is a plan; an ADR is **the minutes**. Rewriting an ADR afterwards is falsifying history.
 
 ---
 
-## 書き方
+## When to write one
+
+Write down decisions that **someone will later ask "why?" about**.
+
+- Technology choices (language, framework, database, external service)
+- Architectural boundaries (service split, layering, direction of dependencies)
+- Cross-cutting policy (auth, error handling, log format, naming)
+- **Things we decided not to do** (e.g. "we will not split into microservices")
+- Decisions about the process itself (such as `ADR-0001` here)
+
+Do not write one for:
+
+- Implementation detail (variable names, function split)
+- A judgment contained within one feature (the DD covers it)
+- A decision you could change tomorrow
+
+**The test**: "In six months, will a new joiner ask why this is the way it is?"
+If yes, write the ADR.
+
+---
+
+## How to write it
 
 ```bash
-python3 scripts/new_doc.py adr "セッション保存先に Redis を採用する"
-# → docs/adr/ADR-0003-session-store-redis.md
+python3 scripts/new_doc.py adr "Adopt Redis for the session store" --slug session-store-redis
 ```
 
-テンプレート: [`docs/templates/adr.md`](../templates/adr.md)
+Template: [`docs/templates/adr.md`](../templates/adr.md)
 
 ```
 front matter    ← id / status / date / deciders / related
-## Context      ← どういう状況で、何を決める必要があったか
-## Decision     ← 何を決めたか（能動態・断定形で 1〜3 文）
-## Consequences ← 良い結果 / 悪い結果 / 引き受けたリスク
-## Alternatives ← 検討した他案と却下理由（1 案 2〜3 行）
+## Context      ← the situation, and what had to be decided
+## Decision     ← what was decided (active voice, declarative, 1–3 sentences)
+## Consequences ← good outcomes / bad outcomes / risk accepted
+## Alternatives Considered ← the other options and why they lost (2–3 lines each)
 ```
 
-### 書き方のコツ
+### Craft notes
 
-- **タイトルは決定そのもの**にする
-  - ❌ 「セッション保存先について」 ❌ 「認証の検討」
-  - ✅ 「セッション保存先に Redis を採用する」 ✅ 「サービス分割を当面行わない」
-- **Decision は能動態・断定形で書く**
-  - ❌ 「Redis がよいと思われる」 → ✅ 「セッションは Redis に保存する」
-- **Consequences には必ず「悪い結果」を書く**
-  - トレードオフのない決定は存在しない。書けないなら、検討が足りていない
-- **1 ページを超えたら、それは DD である**
+- **The title is the decision itself**
+  - ❌ "About the session store" ❌ "Auth investigation"
+  - ✅ "Adopt Redis for the session store" ✅ "Do not split into services for now"
+- **Write the Decision in active, declarative voice**
+  - ❌ "Redis seems preferable" → ✅ "Sessions are stored in Redis"
+- **Consequences must include the bad outcomes**
+  - There is no decision without a trade-off. If you cannot name one, you have not thought it through
+- **If it runs past one page, it is a design doc**
 
 ---
 
-## 状態
+## States
 
 ```
-proposed ──→ accepted ──→ superseded (新 ADR に置換)
+proposed ──→ accepted ──→ superseded (replaced by a new ADR)
     │            │
-    └──→ rejected└──→ deprecated (もう当てはまらないが置換もない)
+    └──→ rejected└──→ deprecated (no longer applies, with no replacement)
 ```
 
-| status | 意味 |
+| status | Meaning |
 | --- | --- |
-| `proposed` | 提案中（PR レビュー中） |
-| `accepted` | 採用。現行の方針 |
-| `rejected` | 却下。**残す**（同じ議論の再発を防ぐ） |
-| `superseded` | 新 ADR に置き換え。`superseded_by: ADR-xxxx` を書く |
-| `deprecated` | 前提が消滅した（該当機能の廃止など） |
+| `proposed` | Proposed (PR under review) |
+| `accepted` | Adopted. Current policy |
+| `rejected` | Rejected. **Kept**, to prevent re-litigating it |
+| `superseded` | Replaced; `superseded_by: ADR-xxxx` names the successor |
+| `deprecated` | Its premise disappeared (the feature was removed, etc.) |
 
-**過去の ADR を書き換えない。** 決定が変わったら:
+**Never rewrite a past ADR.** When a decision changes:
 
-1. 新しい ADR を書く（Context に「ADR-xxxx を見直す必要が生じた」と書く）
-2. 新 ADR に `supersedes: [ADR-xxxx]`
-3. 旧 ADR の status を `superseded` にし、`superseded_by` を書く（**この 2 行だけが旧 ADR への許される編集**）
-
----
-
-## レビューとマージ
-
-- ADR は**単独の PR** で出す。タイトルは `docs(adr): ADR-xxxx <title>`
-- レビュアは「**この Consequences で本当に納得できるか**」を見る
-- マージされた時点で `accepted`
-- 実装 PR より**先に**マージする（決定してから作る）
+1. Write a new ADR (its Context says "ADR-xxxx needed revisiting")
+2. The new ADR gets `supersedes: [ADR-xxxx]`
+3. The old one moves to `superseded` with `superseded_by` set — **those two lines are the
+   only edit ever permitted to an old ADR**
 
 ---
 
-## AI による ADR 執筆
+## Review and merge
 
-AI が ADR を書くとき、特に注意すべきこと。
+- An ADR goes up as **its own PR**, titled `docs(adr): ADR-xxxx <title>`
+- The reviewer's question is "**can I genuinely live with these Consequences?**"
+- Merging makes it `accepted`
+- Merge it **before** the implementation PR — decide, then build
 
-| 起きがちな劣化 | 対策 |
+---
+
+## When AI writes the ADR
+
+Watch for these degradations in particular.
+
+| Likely degradation | Countermeasure |
 | --- | --- |
-| Consequences の「悪い結果」が薄い | **必ず 2 つ以上書かせる**。書けないなら検討不足 |
-| 代替案の却下理由が「複雑だから」 | 誰がどんなコストを払うのかまで書かせる |
-| 議論の経緯を勝手に要約して歪める | PR のコメントスレッドを引用させる |
-| 決定していないことを決定として書く | Owner が `accepted` にするまで `proposed` を維持 |
+| The "bad outcomes" are thin | **Require two or more.** If you cannot, the thinking is incomplete |
+| Alternatives rejected as "too complex" | Make it say who pays what cost |
+| The history gets summarised into something distorted | Quote the PR comment threads |
+| Undecided things written as decided | Keep `proposed` until the Owner makes it `accepted` |
 
-ADR の A（説明責任）は**常に人間の Owner にある**。
-AI は下書きを書くが、`accepted` にするのは Owner の署名行為である。
+The A (accountability) for an ADR **always sits with the human Owner**.
+AI writes the draft; moving it to `accepted` is the Owner's act of signature.
 
 ---
 
-## 索引
+## Index
 
-[`docs/adr/README.md`](../adr/README.md) に全 ADR の一覧を維持する。
-`scripts/validate_docs.py` が索引とファイルの整合を検証する。
+[`docs/adr/README.md`](../adr/README.md) holds the list of all ADRs.
+`scripts/validate_docs.py` checks the index against the files.

@@ -1,127 +1,132 @@
-# CLAUDE.md — AI エージェント常時ルール
+# CLAUDE.md — Standing rules for AI agents
 
-このリポジトリで作業する AI エージェントは、毎セッション本ファイルに従うこと。
-プロセスの詳細は `docs/process/` にある。本ファイルはその**実行時の要約**である。
-
----
-
-## 0. 最優先の 3 原則
-
-1. **判断を勝手にしない。** 設計上の分岐は自分で決めず、**Decision Points として提示**して人間の判断を仰ぐ。
-2. **根拠のない主張をしない。** 「動くはず」は禁止。**検証コマンドと実行結果**で語る。
-3. **決定は必ず文書に残す。** 会話の中だけで決まったことは、doc または ADR に書くまで**存在しない**。
+Every AI agent working in this repository follows this file, every session.
+The full process lives in `docs/process/`. This file is its **runtime summary**.
 
 ---
 
-## 1. 着手前チェック
+## 0. The three rules that outrank everything
 
-作業を始める前に、必ずこの順で確認する。
-
-1. **対象 Issue はあるか。** なければまず Issue を起こす（`.github/ISSUE_TEMPLATE/`）。
-2. **どのゲートにいるか。** `docs/process/01-lifecycle.md` の G0〜G3 のどこか。
-3. **design doc が必要か。** 下の判定に従う。
-4. **`agent/ready` ラベルがあるか。** ない Issue に対して自律実装を始めない。
-
-### design doc が必要かの判定
-
-次のいずれかに当てはまるなら **design doc（DD）が必要**。
-
-- 複数のコンポーネント/サービスにまたがる
-- 公開 API・データスキーマ・永続データの形を変える
-- 後から変更するコストが高い（移行が必要になる）
-- 妥当な代替案が 2 つ以上あり、選択に判断が要る
-- セキュリティ・プライバシー・課金・可用性に影響する
-- 見積もりが概ね 3 人日/3 セッションを超える
-
-当てはまらないなら **one-pager**（`docs/templates/one-pager.md`）か、Issue 本文だけで進めてよい。
-**迷ったら doc を書く側に倒す**（執筆コストは AI にとって安い）。
+1. **Do not decide on your own.** Never settle a design fork yourself — **surface it as a Decision Point** and let a human decide.
+2. **Do not assert without evidence.** "This should work" is banned. Speak in **commands run and output observed**.
+3. **Every decision gets written down.** Anything settled only in conversation **does not exist** until it is in a doc or an ADR.
 
 ---
 
-## 2. 実行ループ
+## 1. Before you start
+
+Check these, in this order.
+
+1. **Is there an Issue?** If not, open one first (`.github/ISSUE_TEMPLATE/`).
+2. **Which gate are you at?** G0–G3 in `docs/process/01-lifecycle.md`.
+3. **Does this need a design doc?** Use the test below.
+4. **Does the Issue carry `agent/ready`?** Never start autonomous implementation without it.
+
+### Does this need a design doc?
+
+A **design doc (DD) is required** if any of these hold.
+
+- It spans more than one component or service
+- It changes a public API, a schema, or the shape of persisted data
+- It is expensive to change later (a migration would be needed)
+- Two or more reasonable alternatives exist and picking one takes judgment
+- It touches security, privacy, billing, or availability
+- The estimate exceeds roughly 3 person-days / 3 sessions
+
+If none hold, a **one-pager** (`docs/templates/one-pager.md`) or just the Issue body is enough.
+**When in doubt, write the doc** — writing is cheap for an AI.
+
+---
+
+## 2. The execution loop
 
 ```
 Explore → Design → Decide → Decompose → Implement → Verify → Record
- 調査     doc起案   人間判断   Issue分解    PR         検証     doc/ADR更新
+research   draft     human     into        build     prove    update
+           the doc   decides   Issues                         doc/ADR
 ```
 
-各フェーズの禁止事項:
+What not to do in each phase:
 
-| フェーズ | やってはいけないこと |
+| Phase | Do not |
 | --- | --- |
-| Explore | 既存コードを読まずに設計を書く |
-| Design | 代替案を 1 つしか出さない／Decision Points を空にする |
-| Decide | 人間の承認前に実装を始める |
-| Decompose | 受け入れ条件のない Issue を作る |
-| Implement | 1 PR に複数 Issue を詰め込む／doc の範囲外に手を広げる |
-| Verify | テストを skip・disable・削除して緑にする |
-| Record | 設計と実装が乖離したまま doc を放置する |
+| Explore | Write a design without reading the existing code |
+| Design | Offer only one alternative / leave Decision Points empty |
+| Decide | Start building before a human approves |
+| Decompose | Create an Issue with no acceptance criteria |
+| Implement | Pack several Issues into one PR / reach outside the doc's scope |
+| Verify | Skip, disable, or delete a test to go green |
+| Record | Leave the doc stale while the implementation has moved on |
 
 ---
 
-## 3. 文書の書き方
+## 3. Writing documents
 
-- **design doc**: `docs/templates/design-doc.md` をコピー。`scripts/new_doc.py design "<title>"` で採番される。
-- **ADR**: `docs/templates/adr.md`。`scripts/new_doc.py adr "<title>"`。
-- front matter の必須キーと見出しは `scripts/validate_docs.py` が検証する。**書いたら必ずローカルで実行**する。
+- **design doc**: copy `docs/templates/design-doc.md`, or let `scripts/new_doc.py design "<title>" --slug <slug>` number it for you.
+- **ADR**: `docs/templates/adr.md`, or `scripts/new_doc.py adr "<title>" --slug <slug>`.
+- Required front matter keys and headings are enforced by `scripts/validate_docs.py`. **Run it locally before you submit.**
 
 ```bash
 python3 scripts/validate_docs.py
+python3 scripts/check_links.py
 ```
 
-### 代替案（Alternatives Considered）の書き方
+### How to write Alternatives Considered
 
-AI にとって執筆は安い。**必ず実行可能な代替案を 2〜3 案**出し、各案について書く。
+Writing is cheap for an AI, so **always produce two or three genuinely workable alternatives**,
+and for each one write:
 
-- どう動くか（1 段落）
-- 採用した場合に何を失うか（トレードオフ）
-- **却下理由**（「複雑だから」は理由にならない。何がどう複雑で、誰がそのコストを払うのかを書く）
+- How it works (one paragraph)
+- What you give up by choosing it (the trade-off)
+- **Why it was rejected.** "Too complex" is not a reason — say what is complex about it and who pays that cost
 
-### Decision Points の書き方
+### How to write Decision Points
 
-人間に判断してほしい点だけを列挙する。各項目に必ず含めるもの:
+List only what you want a human to decide. Every entry carries:
 
-- 選択肢（2 つ以上）
-- **AI の推奨と、その根拠**
-- **この判断が後から覆るときのコスト**（安いなら「推奨で進めて後で直す」と明記してよい）
+- Two or more options ("do it / don't do it" is a legitimate pair)
+- **Your recommendation and the reasoning behind it**
+- **The cost of reversing this decision later.** If reversing is cheap, say so and mark it `[proceed on the recommendation, revisable]`
 
-Decision Points が空の doc は、レビュー依頼を出してはならない。
-
----
-
-## 4. Issue とロードマップ
-
-- 1 Issue = 1 つの検証可能な成果。半日〜2 日相当に分解する。
-- 必須ラベル: `type/*`, `priority/*`。実装可能なら `agent/ready` を付ける。
-- design doc から分解した Issue は、本文に **`Design doc: DD-xxxx`** を必ず書く。
-- ロードマップは Milestone（時間軸）+ Projects の Status/Stage フィールドで表す。
-  詳細は `docs/process/05-issues-roadmap.md`。
+**A doc with empty Decision Points must never be sent for review.**
 
 ---
 
-## 5. Pull Request
+## 4. Issues and the roadmap
 
-- **1 PR = 1 Issue**。PR 本文に `Closes #<issue>` を書く。
-- design doc 由来なら `Design doc: DD-xxxx` も書く。
-- `.github/pull_request_template.md` のチェック項目は消さずに埋める。
-- **push 前に必ず**、リポジトリの lint / typecheck / テストをローカルで実行し、**結果を PR 本文に貼る**。
-- CI が赤いまま「レビュー待ち」にしない。赤は自分の仕事。
+- 1 Issue = 1 verifiable outcome. Break work down to half a day to two days.
+- Required labels: `type/*`, `priority/*`. Add `agent/ready` only when it is genuinely ready.
+- An Issue decomposed from a design doc **must** carry `Design doc: DD-xxxx` in its body.
+- The roadmap is Milestones (time) plus the Projects Status/Stage fields.
+  See `docs/process/05-issues-roadmap.md`.
 
----
-
-## 6. 検証の作法
-
-- 受け入れ条件は **Given / When / Then** で書き、**それを確かめるコマンド**を併記する。
-- バグ修正では、**先に失敗するテストを書いて再現**させ、その後に直す。
-- 「フレーキーだから」は根本原因ではない。再実行は原則 1 回まで。
-- テストの skip / disable / 削除で緑にすることは、いかなる理由でも禁止。
+**You never apply `agent/ready` yourself — a human does.** See `docs/process/07-definition-of-done.md`.
 
 ---
 
-## 7. やってはいけないこと（ハードルール）
+## 5. Pull requests
 
-- 人間の承認（G1）前に、design doc が必要な変更の実装を始める
-- Decision Points を自分で決めて doc に「決定済み」と書く
-- doc に書かれていない範囲へ実装を広げる（スコープクリープ）
-- 秘密情報（トークン、鍵、内部ホスト名）を doc・Issue・PR に書く
-- 決定の根拠を GitHub 外（チャット等）にだけ残す
+- **1 PR = 1 Issue.** Put `Closes #<issue>` in the body.
+- If it came from a design doc, add `Design doc: DD-xxxx`.
+- Fill in the checklist in `.github/pull_request_template.md` — do not delete items.
+- **Before pushing**, run the repository's lint / typecheck / tests locally and **paste the results into the PR body**.
+- Never leave a PR red and call it "waiting on review". Red CI is your job.
+
+---
+
+## 6. How to verify
+
+- Write acceptance criteria as **Given / When / Then**, each with **the command that proves it**.
+- For a bug fix, **write a failing test that reproduces it first**, then fix it.
+- "It's flaky" is not a root cause. Re-run at most once.
+- Skipping, disabling, or deleting a test to go green is forbidden, for any reason.
+
+---
+
+## 7. Hard rules (never do these)
+
+- Start implementing a change that needs a design doc before a human approves it (G1)
+- Decide a Decision Point yourself and write it into the doc as settled
+- Extend the implementation beyond what the doc describes (scope creep)
+- Put secrets (tokens, keys, internal hostnames) in a doc, Issue, or PR
+- Leave the reasoning behind a decision only outside GitHub (chat and the like)

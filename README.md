@@ -1,114 +1,119 @@
-# windx — 開発プロセス標準
+# windx — Development Process Standard
 
-Google の **design docs 文化**を AI 駆動開発に落とし込み、
-**チケット管理・ロードマップ・意思決定記録のすべてを GitHub で完結**させるための
-プロセス標準とツール一式です。
+A process standard and toolchain that adapts Google's **design docs culture** to
+AI-driven development, keeping **issue tracking, the roadmap, and decision records
+entirely inside GitHub**.
 
 ---
 
-## 1. なぜ design doc なのか（AI 駆動での再定義）
+## 1. Why design docs (redefined for AI-driven work)
 
-Google の design doc の本質は 2 つでした。
+Google's design docs worked for two reasons.
 
-1. **書くことによる思考** — 散文で書くと、曖昧な設計は書けない
-2. **レビューによる合意** — 実装前に、安い段階で反対意見を受け取る
+1. **Thinking by writing** — vague designs cannot survive prose
+2. **Agreement through review** — objections arrive while they are still cheap
 
-AI 駆動開発では、ここに構造変化が起きます。
+AI-driven development changes the structure underneath those two reasons.
 
-| | 従来 | AI 駆動 |
+| | Before | AI-driven |
 | --- | --- | --- |
-| 設計書の執筆コスト | 高い（数日） | **ほぼゼロ**（数分） |
-| 実装コスト | 高い | 低い |
-| **ボトルネック** | 執筆と実装 | **判断と検証** |
-| 代替案の検討 | 建前になりがち | **実際に 3 案出せる** |
-| 設計書の読者 | 人間のみ | **人間 + AI エージェント** |
+| Cost of writing a design | High (days) | **Near zero** (minutes) |
+| Cost of implementation | High | Low |
+| **Bottleneck** | Writing and building | **Deciding and verifying** |
+| Alternatives considered | Tends to be lip service | **Three real options are affordable** |
+| Audience of the doc | Humans only | **Humans + AI agents** |
 
-結論はこうです。
+Which leads to this.
 
-> **doc は「人間が合意するための文書」であると同時に、「AI に渡す最大のコンテキスト入力」である。**
+> **A doc is both the artifact humans agree on and the largest context input an AI agent receives.**
 
-だから本プロセスの design doc は、Google 流の散文構造を保ちながら、
-機械可読な front matter・受け入れ条件・エージェント向け制約を併せ持ちます。
-そして人間は doc 全文を承認するのではなく、**Decision Points だけを判断します**。
+So the design docs here keep Google's prose structure while adding machine-readable
+front matter, verifiable acceptance criteria, and explicit constraints for agents.
+And humans do not approve the whole doc — they **decide the Decision Points**.
 
-詳しい設計判断は [`docs/design/DD-0001-development-process.md`](docs/design/DD-0001-development-process.md)
-（このプロセス自身の design doc）にあります。
+The reasoning behind each choice lives in
+[`docs/design/DD-0001-development-process.md`](docs/design/DD-0001-development-process.md),
+this process's own design doc.
 
 ---
 
-## 2. 全体像
+## 2. The shape of it
 
 ```
-   ┌── G0 ──────┐   ┌── G1 ──────┐   ┌── G2 ──────┐   ┌── G3 ──────┐
-   │ 問題を定義 │ → │ 設計に合意 │ → │ 実装を承認 │ → │ 出荷を判断 │
-   └────────────┘   └────────────┘   └────────────┘   └────────────┘
-     Issue            Design Doc         Pull Request      Release
-    (type/*)          (DD-xxxx)          (1 PR = 1 Issue)   (Milestone)
-        │                  │                   │                 │
-        └──────────────────┴─────── ADR (ADR-xxxx) ──────────────┘
-                     「なぜそう決めたか」の永続記録
+   ┌── G0 ──────────┐   ┌── G1 ────────┐   ┌── G2 ──────────┐   ┌── G3 ───────┐
+   │ Frame the      │ → │ Agree on the │ → │ Approve the    │ → │ Decide to   │
+   │ problem        │   │ design       │   │ implementation │   │ ship        │
+   └────────────────┘   └──────────────┘   └────────────────┘   └─────────────┘
+     Issue                Design Doc          Pull Request         Release
+    (type/*)              (DD-xxxx)           (1 PR = 1 Issue)     (Milestone)
+        │                     │                     │                   │
+        └─────────────────────┴──────── ADR (ADR-xxxx) ─────────────────┘
+                        the durable record of "why we chose this"
 
-   AI:    起案・執筆・分解・実装・検証の実行
-   人間:  ゲートでの判断（Decision Points / 受け入れ / 出荷可否）
+   AI:     runs the research, writing, decomposition, implementation, verification
+   Human:  decides at the gates (Decision Points / acceptance / ship-or-not)
 ```
 
-GitHub 上での対応物:
+How that maps onto GitHub:
 
-| 概念 | GitHub 上の実体 |
+| Concept | What it is on GitHub |
 | --- | --- |
-| 課題・タスク | Issues（`type/*` ラベルで種別） |
-| 設計文書 | `docs/design/DD-xxxx-*.md` + 追跡 Issue |
-| 意思決定記録 | `docs/adr/ADR-xxxx-*.md` |
-| ロードマップ | GitHub Projects（Roadmap ビュー）+ Milestones |
-| レビューと合意 | Pull Request（doc も PR でレビューする） |
-| 品質ゲート | GitHub Actions |
+| Problems and tasks | Issues (typed by `type/*` labels) |
+| Design documents | `docs/design/DD-xxxx-*.md` + a tracking Issue |
+| Decision records | `docs/adr/ADR-xxxx-*.md` |
+| Roadmap | GitHub Projects (Roadmap view) + Milestones |
+| Review and agreement | Pull Requests (docs are reviewed as PRs too) |
+| Quality gates | GitHub Actions |
 
 ---
 
-## 3. 最初の一歩
+## 3. Where to start
 
-| やりたいこと | 読むもの |
+| If you want to | Read |
 | --- | --- |
-| プロセス全体を理解する | [`docs/process/01-lifecycle.md`](docs/process/01-lifecycle.md) |
-| 誰が何を決めるのか知る | [`docs/process/02-roles.md`](docs/process/02-roles.md) |
-| design doc を書く | [`docs/process/03-design-doc.md`](docs/process/03-design-doc.md) / [テンプレート](docs/templates/design-doc.md) |
-| レビューする | [`docs/process/04-review.md`](docs/process/04-review.md) |
-| Issue とロードマップを運用する | [`docs/process/05-issues-roadmap.md`](docs/process/05-issues-roadmap.md) |
-| AI エージェントを走らせる | [`docs/process/06-agent-protocol.md`](docs/process/06-agent-protocol.md) |
-| 完了の定義を確認する | [`docs/process/07-definition-of-done.md`](docs/process/07-definition-of-done.md) |
-| 意思決定を記録する | [`docs/process/08-adr.md`](docs/process/08-adr.md) |
-| **GitHub 側の設定を済ませる** | [`docs/process/09-setup-checklist.md`](docs/process/09-setup-checklist.md) |
+| Understand the whole process | [`docs/process/01-lifecycle.md`](docs/process/01-lifecycle.md) |
+| Know who decides what | [`docs/process/02-roles.md`](docs/process/02-roles.md) |
+| Write a design doc | [`docs/process/03-design-doc.md`](docs/process/03-design-doc.md) / [template](docs/templates/design-doc.md) |
+| Review something | [`docs/process/04-review.md`](docs/process/04-review.md) |
+| Run issues and the roadmap | [`docs/process/05-issues-roadmap.md`](docs/process/05-issues-roadmap.md) |
+| Put an AI agent to work | [`docs/process/06-agent-protocol.md`](docs/process/06-agent-protocol.md) |
+| Check what "done" means | [`docs/process/07-definition-of-done.md`](docs/process/07-definition-of-done.md) |
+| Record a decision | [`docs/process/08-adr.md`](docs/process/08-adr.md) |
+| **Finish the GitHub-side setup** | [`docs/process/09-setup-checklist.md`](docs/process/09-setup-checklist.md) |
 
-AI エージェント（Claude Code 等）は [`CLAUDE.md`](CLAUDE.md) を常時ルールとして読みます。
+AI agents (Claude Code and friends) read [`CLAUDE.md`](CLAUDE.md) as their standing rules.
 
 ---
 
-## 4. 付属ツール
+## 4. Tooling
 
 ```bash
-# 新しい design doc / ADR を採番して作成
-python3 scripts/new_doc.py design "アップロードパイプラインの再設計"
-python3 scripts/new_doc.py adr    "オブジェクトストレージに S3 を採用する"
+# Create a numbered design doc or ADR
+python3 scripts/new_doc.py design "Rework the upload pipeline" --slug upload-pipeline
+python3 scripts/new_doc.py adr    "Adopt S3 for object storage"  --slug s3-object-storage
 
-# doc の構造検証（CI と同じチェックをローカルで）
-python3 scripts/validate_docs.py
+# Run the same checks CI runs
+python3 scripts/validate_docs.py     # doc structure
+python3 scripts/check_links.py       # relative links
+python3 scripts/sync_labels.py --dry-run
+python3 scripts/project_sync.py --dry-run   # Projects field sync
 ```
 
-Claude Code 用スキル（`.claude/skills/`）:
+Claude Code skills (`.claude/skills/`):
 
-| スキル | 役割 |
+| Skill | What it does |
 | --- | --- |
-| `design-doc` | 課題から design doc をドラフトし、代替案と Decision Points を提示する |
-| `decompose` | 承認済み design doc を実装 Issue 群に分解して起票する |
-| `adr` | 確定した意思決定を ADR として記録する |
+| `design-doc` | Drafts a design doc from a problem, with alternatives and Decision Points |
+| `decompose` | Breaks an approved design doc into implementation Issues |
+| `adr` | Records a settled decision as an ADR |
 
 ---
 
-## 5. 原則（迷ったらここに戻る）
+## 5. Principles (come back here when in doubt)
 
-1. **判断は人間、作業は AI。** 人間の時間は判断にだけ使う。
-2. **合意は実装より前に。** 手戻りが一番高くつくのは実装後の設計変更。
-3. **書かれていない決定は、存在しない。** 会話で決めたことは doc か ADR に落とす。
-4. **検証できない完了はない。** 受け入れ条件は必ず検証手段とセットで書く。
-5. **doc は生きた資産。** 実装が doc から乖離したら、doc を直す。
-6. **すべて GitHub に。** 外部ツールに決定を置かない。リンク切れは知識の消失。
+1. **Humans decide, AI executes.** Spend human time only on judgment.
+2. **Agree before building.** The most expensive rework is a design change after implementation.
+3. **A decision that is not written down does not exist.** Move anything settled in conversation into a doc or an ADR.
+4. **There is no done without verification.** Every acceptance criterion ships with the command that proves it.
+5. **Docs are living assets.** When the implementation drifts from the doc, fix the doc.
+6. **Everything in GitHub.** Never leave a decision in an external tool. A broken link is lost knowledge.

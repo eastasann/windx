@@ -1,7 +1,7 @@
 name: labels
 
-# .github/labels.yml の内容を GitHub のラベルに同期する。
-# 規約: docs/process/05-issues-roadmap.md
+# Syncs .github/labels.yml to the repository's GitHub labels.
+# Conventions: docs/process/05-issues-roadmap.md
 on:
   push:
     branches: [main]
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       prune:
-        description: "labels.yml にないラベルを削除する"
+        description: "Also delete labels that are not in labels.yml"
         type: boolean
         default: false
 
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   sync:
-    name: ラベルを同期
+    name: Sync labels
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 同期
+      - name: Sync
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

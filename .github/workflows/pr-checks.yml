@@ -1,7 +1,7 @@
 name: pr-checks
 
-# PR 本文のトレーサビリティ（Closes #n / Design doc）を検証する。
-# 規約: docs/process/05-issues-roadmap.md
+# Validates PR traceability (Closes #n / Design doc).
+# Conventions: docs/process/05-issues-roadmap.md
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize, labeled, unlabeled, ready_for_review]
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   traceability:
-    name: トレーサビリティ検証
+    name: Traceability
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +21,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      # PR 本文は外部入力なので、必ず環境変数経由で渡す（コマンドへの直接展開はしない）
-      - name: PR 本文を検証
+      # The PR body is untrusted input, so it is always passed through the environment
+      # rather than interpolated into a command line.
+      - name: Check the PR body
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}

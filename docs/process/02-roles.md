@@ -1,93 +1,95 @@
-# 02. 役割分担
+# 02. Roles
 
-## 前提：何が希少資源か
+## What is actually scarce
 
-AI 駆動開発において希少なのは、コードを書く能力ではない。
+In AI-driven development, the ability to write code is not the scarce resource.
 
-| 資源 | 希少性 | 誰が持つか |
+| Resource | Scarcity | Who holds it |
 | --- | --- | --- |
-| コードを書く | 潤沢 | AI |
-| 文書を書く | 潤沢 | AI |
-| 調査する | 潤沢 | AI |
-| **文脈を持った判断** | **希少** | **人間** |
-| **責任を取ること** | **希少** | **人間** |
-| **「やらない」と決めること** | **希少** | **人間** |
+| Writing code | Abundant | AI |
+| Writing documents | Abundant | AI |
+| Researching | Abundant | AI |
+| **Judgment with context** | **Scarce** | **Humans** |
+| **Taking responsibility** | **Scarce** | **Humans** |
+| **Deciding not to do something** | **Scarce** | **Humans** |
 
-したがって役割分担の原則はひとつ。
+So there is one principle for dividing the work.
 
-> **人間の時間は、判断にだけ使う。**
-> 人間が文章を書いている、あるいは AI の出力を全文読んでいるなら、設計が間違っている。
+> **Spend human time on judgment only.**
+> If a human is writing prose, or reading an AI's output end to end, the design is wrong.
 
 ---
 
-## 役割の定義
+## The roles
 
-| 役割 | 誰が担うか | 責務 |
+| Role | Who | Owns |
 | --- | --- | --- |
-| **Owner** | 人間 1 名 | その Issue / doc の最終責任者。Decision Points に答える。承認する |
-| **Reviewer** | 人間 1 名以上 | 設計とコードに異議を唱える。異議は記録に残す |
-| **Agent** | AI | 調査・起案・分解・実装・検証・記録の実行 |
-| **Approver** | 人間 | G3（出荷）の可否を決める。小規模チームでは Owner と同一でよい |
+| **Owner** | One human | Final responsibility for that Issue or doc. Answers the Decision Points. Approves |
+| **Reviewer** | One or more humans | Raises objections to design and code. Objections go on the record |
+| **Agent** | AI | Executes research, drafting, decomposition, implementation, verification, recording |
+| **Approver** | Human | Decides G3 (ship). On a small team, the same person as the Owner |
 
-Owner のいない doc・Issue は進まない。**起票時に必ず Owner を決める**。
+A doc or Issue with no Owner does not move. **Pick the Owner when you open it.**
 
 ---
 
 ## RACI
 
-R = 実行, A = 説明責任, C = 相談, I = 報告
+R = responsible, A = accountable, C = consulted, I = informed
 
-| 活動 | Agent | Owner | Reviewer |
+| Activity | Agent | Owner | Reviewer |
 | --- | --- | --- | --- |
-| 課題の調査・再現 | **R** | A | I |
-| Issue の起票・整形 | **R** | A | I |
-| 優先度の決定 | C | **R/A** | C |
-| design doc の執筆 | **R** | A | I |
-| 代替案の列挙 | **R** | A | C |
-| **Decision Points への回答** | C | **R/A** | **C** |
-| doc の承認 (G1) | I | **R/A** | **C** |
-| Issue への分解 | **R** | A | I |
-| 実装 | **R** | A | I |
-| テストの作成 | **R** | A | I |
-| コードレビュー | C | A | **R** |
-| マージ (G2) | I | **R/A** | C |
-| リリース判断 (G3) | I | C | I |
-| ADR の執筆 | **R** | **A** | C |
+| Research and reproduction | **R** | A | I |
+| Opening and shaping Issues | **R** | A | I |
+| Setting priority | C | **R/A** | C |
+| Writing the design doc | **R** | A | I |
+| Enumerating alternatives | **R** | A | C |
+| **Answering the Decision Points** | C | **R/A** | **C** |
+| Approving the doc (G1) | I | **R/A** | **C** |
+| Decomposing into Issues | **R** | A | I |
+| Implementation | **R** | A | I |
+| Writing tests | **R** | A | I |
+| Code review | C | A | **R** |
+| Merging (G2) | I | **R/A** | C |
+| Ship decision (G3) | I | C | I |
+| Writing ADRs | **R** | **A** | C |
 
-読み方: **AI は R（実行）を広く持つが、A（説明責任）は一度も持たない。**
-説明責任は常に人間にある。これは AI の能力の問題ではなく、責任の所在の問題である。
-
----
-
-## 人間が絶対に手放してはいけない 4 つ
-
-1. **Decision Points への回答** — 設計上の分岐の選択
-2. **スコープの却下** — 「これはやらない」と決めること
-3. **受け入れの判断** — 「これで解けている」と認めること
-4. **出荷の判断** — 世に出す責任
-
-これ以外は AI に委譲してよい。委譲しないなら、その理由を明文化すること
-（プロセスが古いのか、AI の出力品質が不足しているのか、を切り分ける）。
+How to read it: **AI holds R widely but never holds A.**
+Accountability always sits with a human. That is not a statement about AI's capability —
+it is a statement about where responsibility lives.
 
 ---
 
-## レビュアの決め方
+## The four things humans never hand over
 
-| 変更の性質 | 必要なレビュア |
+1. **Answering the Decision Points** — choosing at a design fork
+2. **Rejecting scope** — deciding "we will not do this"
+3. **Accepting the work** — agreeing that it solves the problem
+4. **The ship decision** — the responsibility of releasing
+
+Everything else can be delegated to AI. If you choose not to delegate something,
+write down why, so you can tell an outdated process from insufficient AI output quality.
+
+---
+
+## Choosing reviewers
+
+| Nature of the change | Reviewers required |
 | --- | --- |
-| 通常の変更 | Reviewer 1 名 |
-| 公開 API / データスキーマの変更 | Reviewer 2 名（うち 1 名は当該領域に詳しい人） |
-| セキュリティ・認証・権限・課金 | Reviewer 2 名 + `risk/high` ラベル。**AI 単独承認は不可** |
-| プロセス自体の変更 | Owner + Reviewer 1 名、ADR 必須 |
-| 表記ゆれ・typo・フォーマット | レビュー不要（CI が通れば可） |
+| Ordinary change | 1 reviewer |
+| Public API or schema change | 2 reviewers, one familiar with the area |
+| Security, auth, permissions, billing | 2 reviewers plus the `risk/high` label. **AI approval alone is not valid** |
+| A change to the process itself | Owner plus 1 reviewer; an ADR is mandatory |
+| Typos, wording, formatting | No review needed if CI passes |
 
 ---
 
-## 「AI が書いたから」は理由にならない
+## "An AI wrote it" is not a reason
 
-- ❌ 「AI が書いたコードなので念のため全部読む」→ レビューがボトルネックになる
-- ❌ 「AI が書いたので大丈夫」→ 説明責任の放棄
-- ✅ **「検証可能な形で出させ、検証結果を見て判断する」**
+- ❌ "An AI wrote this code, so I'll read every line to be safe" → review becomes the bottleneck
+- ❌ "An AI wrote it, so it's fine" → abdicating accountability
+- ✅ **"Make it produce verifiable output, then judge from the verification."**
 
-レビューで疲弊しているなら、直すべきはレビューの気合ではなく、
-**受け入れ条件の粒度**と**CI の網**である（[07-definition-of-done.md](07-definition-of-done.md)）。
+If review is exhausting you, the thing to fix is not your diligence. It is the
+**granularity of the acceptance criteria** and the **coverage of CI**
+(see [07-definition-of-done.md](07-definition-of-done.md)).
