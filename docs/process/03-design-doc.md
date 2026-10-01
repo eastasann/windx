@@ -1,179 +1,181 @@
-# 03. design doc 運用規約
+# 03. Design doc standard
 
-## Google の design doc から引き継ぐもの / 変えるもの
+## What we keep from Google's design docs, and what we change
 
-| | Google の design doc | 本プロセス | 理由 |
+| | Google's design doc | Here | Why |
 | --- | --- | --- | --- |
-| 形式 | 散文（箇条書きの羅列を避ける） | **継承** | 散文でしか書けない曖昧さの検出機能がある |
-| Goals / Non-goals | 必須 | **継承・強化** | Non-goals は AI のスコープクリープ抑止に直接効く |
-| Alternatives Considered | 必須（形骸化しがち） | **強化** | AI なら実際に 3 案書ける。建前をやめる |
-| Cross-cutting concerns | 必須 | **継承** | セキュリティ / プライバシー / 可観測性 / コスト |
-| 長さ | 3〜10 ページ | **1〜5 ページ + 付録** | 人間が読む本体は短く。詳細は付録に追い出す |
-| 読者 | 人間のみ | **人間 + AI** | ← 最大の違い |
-| 承認 | doc 全体を承認 | **Decision Points を判断** | 人間の判断コストを分岐点に集中させる |
-| 機械可読性 | なし | **front matter 必須** | 追跡・検証・自動化のため |
-| 保管先 | 社内文書ツール | **リポジトリ内 Markdown** | コードと同じ PR でレビュー、同じ履歴に残る |
+| Form | Prose (avoiding bullet dumps) | **Kept** | Prose is what detects vagueness |
+| Goals / Non-goals | Required | **Kept, strengthened** | Non-Goals directly suppress AI scope creep |
+| Alternatives Considered | Required (often lip service) | **Strengthened** | An AI can actually write three. Drop the pretence |
+| Cross-cutting concerns | Required | **Kept** | Security / privacy / observability / cost |
+| Length | 3–10 pages | **1–5 pages + appendix** | Keep the part humans read short; push detail to the appendix |
+| Audience | Humans only | **Humans + AI** | ← the biggest difference |
+| Approval | The whole doc | **The Decision Points** | Concentrate human judgment at the forks |
+| Machine-readable | No | **Front matter required** | For tracking, validation, automation |
+| Stored in | An internal doc tool | **Markdown in the repository** | Reviewed in the same PR, kept in the same history |
 
 ---
 
-## いつ書くか
+## When to write one
 
-次のいずれかなら **design doc（DD）を書く**。
+Write a **design doc (DD)** if any of these hold.
 
-- 複数のコンポーネント/サービスにまたがる
-- 公開 API・データスキーマ・永続データの形を変える
-- 後から変更するコストが高い（移行が必要になる）
-- 妥当な代替案が 2 つ以上あり、選択に判断が要る
-- セキュリティ・プライバシー・課金・可用性に影響する
-- 見積もりが概ね 3 人日 / 3 セッションを超える
+- It spans more than one component or service
+- It changes a public API, a schema, or the shape of persisted data
+- It is expensive to change later (a migration would be needed)
+- Two or more reasonable alternatives exist and picking one takes judgment
+- It touches security, privacy, billing, or availability
+- The estimate exceeds roughly 3 person-days / 3 sessions
 
-いずれにも当たらないなら:
+If none hold:
 
-| 規模 | 使うもの |
+| Size | Use |
 | --- | --- |
-| 中（1〜3 日、選択肢はあるが軽い） | [one-pager](../templates/one-pager.md) — `docs/design/` に置くが front matter は簡略 |
-| 小（半日以内、設計判断なし） | Issue 本文のみ |
+| Medium (1–3 days, options exist but are light) | A [one-pager](../templates/one-pager.md) — lives in `docs/design/` with reduced front matter |
+| Small (under half a day, no design judgment) | The Issue body alone |
 
-**迷ったら書く側に倒す。** AI にとって執筆コストは安く、書かなかったことによる手戻りは高い。
-
----
-
-## 構成
-
-テンプレート: [`docs/templates/design-doc.md`](../templates/design-doc.md)
-
-```
-front matter        ← 機械可読なメタデータ（CI が検証）
-## Summary          ← 3 文以内。これだけ読めば何をするか分かる
-## Context          ← 今どうなっていて、何が問題か（散文）
-## Goals            ← 達成すること（検証可能な形で）
-## Non-Goals        ← やらないこと ★AI のスコープ境界として機能する
-## Decision Points  ← ★人間が判断する点。ここがレビューの本体
-## Design           ← 設計本体（散文 + 図 + インターフェース）
-## Alternatives Considered  ← 実行可能な代替案 2〜3 案と却下理由
-## Cross-cutting Concerns   ← セキュリティ / プライバシー / 可観測性 / コスト / 運用
-## Acceptance Criteria      ← ★検証可能な受け入れ条件（Given/When/Then + 検証手段）
-## Implementation Plan      ← Issue 分解案
-## Context for Agents       ← ★AI 向けの制約（触る場所、踏襲パターン、禁止事項）
-## Open Questions           ← 未解決の疑問
-## Appendix                 ← 詳細データ、計測結果、長い調査ログ
-```
-
-★ = 本プロセス独自の拡張。
+**When in doubt, write it.** Writing is cheap for an AI; the rework from not writing is not.
 
 ---
 
-## 独自拡張 3 つの意図
+## Structure
 
-### ★ Decision Points — 人間の判断を分岐点に集中させる
+Template: [`docs/templates/design-doc.md`](../templates/design-doc.md)
 
-doc 全体を承認させると、人間は全文を読むことになる。これはスケールしない。
-代わりに「**判断が必要な点だけ**」を切り出して先頭近くに置く。
-
-各 Decision Point に必ず書くもの:
-
-- **選択肢**（2 つ以上。「やる / やらない」も立派な 2 択）
-- **AI の推奨と根拠**（推奨を出さずに丸投げしない）
-- **覆すコスト** — 後から変更するのがどれだけ高いか
-
-覆すコストが安い判断は、`[推奨で進行・事後変更可]` と明記して人間の判断を省略してよい。
-**判断コストは、覆すコストに見合わせる。**
-
-```markdown
-### DP-1: セッション保存先
-
-- **選択肢 A**: Redis（推奨）— 既存の Redis クラスタを流用でき、追加運用コストがない
-- **選択肢 B**: RDB のテーブル — 運用対象は増えないが、書き込み頻度がボトルネックになる見込み
-- **AI の推奨**: A。現行のピーク書き込みは 1,200 req/s で、B では既存 DB の余力を超える（付録 A-2 参照）
-- **覆すコスト**: 中。保存先の抽象化層を挟むので差し替えは可能だが、移行にダウンタイムが要る
+```
+front matter        ← machine-readable metadata (validated by CI)
+## Summary          ← three sentences or fewer; read this and you know what happens
+## Context          ← how things are now, and what's wrong (prose)
+## Goals            ← what gets achieved, stated verifiably
+## Non-Goals        ← what does not  ★ acts as the agent's scope boundary
+## Decision Points  ← ★ what a human decides. This is the body of the review
+## Design           ← the design itself (prose + diagrams + interfaces)
+## Alternatives Considered  ← two or three workable options and why they lost
+## Cross-cutting Concerns   ← security / privacy / observability / cost / operations
+## Acceptance Criteria      ← ★ verifiable criteria (Given/When/Then + the command)
+## Implementation Plan      ← the proposed decomposition into Issues
+## Context for Agents       ← ★ constraints for AI (where to touch, patterns, prohibitions)
+## Open Questions           ← what is still unresolved
+## Appendix                 ← detailed data, measurements, long research logs
 ```
 
-### ★ Acceptance Criteria — 検証可能性を設計の一部にする
+★ marks the additions specific to this process.
 
-AI は「それらしく動くもの」を高速に作れる。だから品質の担保は**検証可能性**に移る。
-受け入れ条件は必ず **Given / When / Then** + **検証手段**で書く。
+---
+
+## What the three additions are for
+
+### ★ Decision Points — concentrate human judgment at the forks
+
+Approving a whole doc means a human reads a whole doc. That does not scale.
+Instead, lift out **only the points that need judgment** and put them near the top.
+
+Every Decision Point carries:
+
+- **Two or more options** ("do it / don't" is a legitimate pair)
+- **The AI's recommendation and its reasoning** — never hand the question over bare
+- **The cost of reversal** — how expensive it is to change later
+
+A decision that is cheap to reverse can be marked `[proceed on the recommendation, revisable]`
+and skip human judgment entirely. **Match the cost of deciding to the cost of reversing.**
 
 ```markdown
-- **AC-1**: Given 有効期限切れのセッション, When API を呼ぶ, Then 401 を返し、監査ログに 1 行残る
-  - 検証: `pytest tests/auth/test_session_expiry.py`
+### DP-1: Where sessions are stored
+
+- **Option A**: Redis (recommended) — reuses the existing cluster, no new operational cost
+- **Option B**: a table in the RDB — nothing new to operate, but write throughput becomes the bottleneck
+- **AI recommendation**: A. Peak writes today are 1,200 req/s, which exceeds the headroom B would need (see Appendix A-2)
+- **Cost of reversal**: Medium. A storage abstraction makes swapping possible, but migrating needs downtime
 ```
 
-検証手段が書けない受け入れ条件は、受け入れ条件ではない。**書き直すか、Open Questions に落とす。**
+### ★ Acceptance Criteria — make verifiability part of the design
 
-### ★ Context for Agents — AI の探索を設計で制約する
+An AI can quickly build something that *looks* like it works. So quality rests on
+**verifiability**. Write every criterion as **Given / When / Then** plus **the command**.
 
-AI は探索範囲が広すぎると、既存パターンを無視した実装をする。doc で先に縛る。
+```markdown
+- **AC-1**: Given an expired session, When the API is called, Then it returns 401 and writes one audit log line
+  - Verify: `pytest tests/auth/test_session_expiry.py`
+```
+
+A criterion with no way to verify it is not a criterion. **Rewrite it, or move it to Open Questions.**
+
+### ★ Context for Agents — constrain the search space in the design
+
+Given too much room to explore, an AI will implement something that ignores existing
+patterns. Fence it in up front.
 
 ```markdown
 ## Context for Agents
-- 触ってよい場所: `src/auth/**`, `tests/auth/**`
-- 触ってはいけない場所: `src/billing/**`（別 doc DD-0007 で改修中）
-- 踏襲するパターン: `src/auth/token.py` のリポジトリパターンに合わせる
-- 使ってよいライブラリ: 既存の依存のみ。新規追加は Decision Point として提示すること
-- 既知の落とし穴: `SessionStore.get()` はキャッシュを見るため、テストでは `flush()` が要る
+- May touch: `src/auth/**`, `tests/auth/**`
+- Must not touch: `src/billing/**` (being reworked under DD-0007)
+- Follow this pattern: the repository pattern in `src/auth/token.py`
+- Dependencies: existing ones only. Adding one is a Decision Point
+- Known trap: `SessionStore.get()` reads a cache, so tests need `flush()`
 ```
 
 ---
 
-## 状態遷移
+## State transitions
 
-front matter の `status` は次のいずれか。
+The front matter `status` is one of:
 
 ```
 draft ──→ in-review ──→ approved ──→ implemented
   │           │                          │
-  │           └──→ rejected              └──→ superseded (別 DD に置換)
+  │           └──→ rejected               └──→ superseded (replaced by another DD)
   └──────────────→ rejected
 ```
 
-| status | 意味 | 誰が遷移させるか |
+| status | Meaning | Who moves it |
 | --- | --- | --- |
-| `draft` | 執筆中。レビュー依頼前 | Agent |
-| `in-review` | レビュー中（PR がオープン） | Agent（PR を上げたとき） |
-| `approved` | G1 通過。実装に進んでよい | **Owner のみ** |
-| `implemented` | 実装完了・マージ済み。as-built に更新済み | Agent（実装 PR で） |
-| `rejected` | 却下。**doc は消さず残す**（同じ議論の再発を防ぐ） | Owner |
-| `superseded` | 新しい DD に置き換えられた。`superseded_by` に後継 ID | Owner |
+| `draft` | Being written, not yet up for review | Agent |
+| `in-review` | Under review (a PR is open) | Agent, when the PR goes up |
+| `approved` | Cleared G1; implementation may begin | **Owner only** |
+| `implemented` | Built and merged; updated to as-built | Agent, in the implementation PR |
+| `rejected` | Rejected. **Keep the doc** — it prevents re-litigating the same argument | Owner |
+| `superseded` | Replaced by a newer DD; `superseded_by` names it | Owner |
 
-**却下された doc を削除してはならない。** 「なぜやらなかったか」は「なぜやったか」と同じ価値がある。
+**Never delete a rejected doc.** "Why we didn't" is worth as much as "why we did".
 
 ---
 
-## 番号と置き場所
+## Numbering and location
 
 ```bash
-python3 scripts/new_doc.py design "セッション保存先の変更"
-# → docs/design/DD-0004-session-store.md を作成（番号は自動採番）
+python3 scripts/new_doc.py design "Change the session store" --slug session-store
 ```
 
-- ID: `DD-0001` 形式（4 桁ゼロ埋め、再利用しない）
-- ファイル名: `DD-<番号>-<英小文字ケバブの短い要約>.md`
-- 索引: [`docs/design/README.md`](../design/README.md)（`scripts/validate_docs.py` が整合を検証）
+- ID: `DD-0001` form (four digits, zero-padded, never reused)
+- Filename: `DD-<number>-<short-lowercase-kebab-summary>.md`
+- Index: [`docs/design/README.md`](../design/README.md) — consistency is checked by `scripts/validate_docs.py`
+
+Note that `new_doc.py` cannot derive a slug from a non-ASCII title; pass `--slug` explicitly.
 
 ---
 
-## レビューのかけ方
+## How review runs
 
-1. design doc を**単独の PR** で出す（実装は含めない）
-2. PR タイトル: `docs(design): DD-xxxx <title>`
-3. PR 本文の冒頭に **Decision Points を転記**する（レビュアが GitHub 上で議論できるように）
-4. 各 Decision Point は PR コメントのスレッドで議論する
-5. すべて解決したら Owner が `status: approved` にして自らマージする
+1. Put the design doc up as **its own PR** (no implementation)
+2. PR title: `docs(design): DD-xxxx <title>`
+3. **Copy the Decision Points into the top of the PR body** so reviewers can discuss them on GitHub
+4. Discuss each Decision Point in its own comment thread
+5. When all are settled, the Owner sets `status: approved` and merges
 
-詳細は [04-review.md](04-review.md)。
+See [04-review.md](04-review.md) for details.
 
 ---
 
-## 実装後の as-built 更新
+## Updating to as-built after implementation
 
-**doc は「書いて終わる仕様書」ではなく「維持する資産」である。**
+**A doc is not a spec you write once. It is an asset you maintain.**
 
-実装 PR をマージする際、同じ PR で doc を更新する。
+When the implementation PR merges, update the doc in that same PR.
 
-- `status` を `implemented` に
-- `Design` 節の記述が実装と食い違っていれば直す
-- 実装中に判明した制約を `Cross-cutting Concerns` か `Appendix` に追記
-- 設計方針そのものが変わったなら、doc を直すのではなく **新しい DD を書いて `superseded`**
+- Move `status` to `implemented`
+- Fix anything in `Design` that no longer matches the code
+- Add constraints discovered during the build to `Cross-cutting Concerns` or the `Appendix`
+- If the *approach itself* changed, do not patch the doc — **write a new DD and mark this one `superseded`**
 
-更新されない doc は、半年後に**嘘をつくドキュメント**になる。
-AI はそれを正しい前提として読むので、害は人間が読む場合より大きい。
+A doc that stops being updated becomes **a document that lies** six months later.
+An AI will read it as true, so the damage is larger than when only humans read it.

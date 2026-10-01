@@ -1,208 +1,221 @@
-# 05. Issue とロードマップ
+# 05. Issues and the roadmap
 
-すべて GitHub で完結させる。外部のチケットツール・スプレッドシート・ドキュメントツールに
-**決定や状態を置かない**。リンク切れは知識の消失を意味する。
+Everything lives in GitHub. **No decision or state is kept** in an external tracker,
+spreadsheet, or document tool. A broken link means lost knowledge.
 
-| 用途 | GitHub 上の実体 |
+| Purpose | What it is on GitHub |
 | --- | --- |
-| 作業単位 | **Issues** |
-| 設計文書 | `docs/design/DD-xxxx-*.md` + 追跡 Issue |
-| 意思決定記録 | `docs/adr/ADR-xxxx-*.md` |
-| かんばん / 状態管理 | **Projects (v2)** のボードビュー |
-| ロードマップ | **Projects (v2)** のロードマップビュー + **Milestones** |
-| 出荷単位 | **Milestones** → **Releases** |
-| 議論（結論未確定のもの） | **Discussions**（結論が出たら Issue か ADR にする） |
+| Unit of work | **Issues** |
+| Design documents | `docs/design/DD-xxxx-*.md` + a tracking Issue |
+| Decision records | `docs/adr/ADR-xxxx-*.md` |
+| Kanban / state | **Projects (v2)** board view |
+| Roadmap | **Projects (v2)** roadmap view + **Milestones** |
+| Unit of release | **Milestones** → **Releases** |
+| Open-ended discussion | **Discussions** (once settled, becomes an Issue or an ADR) |
 
 ---
 
-## Issue の粒度
+## Issue granularity
 
-**1 Issue = 1 つの検証可能な成果。** 目安は **半日〜2 日**（AI セッション 1〜3 回）。
+**1 Issue = 1 verifiable outcome.** Aim for **half a day to two days** (1–3 AI sessions).
 
-| 大きすぎる兆候 | 小さすぎる兆候 |
+| Signs it is too big | Signs it is too small |
 | --- | --- |
-| 受け入れ条件が 5 個を超える | 受け入れ条件が書けない |
-| 「〜の改善」「〜の対応」のような曖昧な題 | 1 行の変更で終わる |
-| PR が 500 行を超えそう | 単独ではユーザに何の価値も生まない |
-| 複数の DD にまたがる | 他 Issue と必ず同時にマージが要る |
+| More than five acceptance criteria | You cannot write an acceptance criterion |
+| A vague title like "improve X" or "handle Y" | One line of change |
+| The PR would exceed 500 lines | It delivers no value on its own |
+| It spans several DDs | It must always merge together with another Issue |
 
-大きすぎるなら分割する。小さすぎるなら束ねる。
-**分割の軸は「工程」ではなく「価値」**（× 設計 Issue / 実装 Issue / テスト Issue、
-○ エンドポイント A / エンドポイント B）。
+Too big: split it. Too small: fold it in.
+**Split along value, not along phase** — not "design / build / test" Issues, but
+"endpoint A / endpoint B".
 
 ---
 
-## Issue テンプレート
+## Issue templates
 
-`.github/ISSUE_TEMPLATE/` に配置済み。
+In `.github/ISSUE_TEMPLATE/`.
 
-| テンプレート | `type/*` | 用途 |
+| Template | `type/*` | For |
 | --- | --- | --- |
-| Design Doc | `type/design-doc` | DD の起案と追跡（doc の PR を紐づける） |
-| Feature | `type/feature` | 新機能・機能改善 |
-| Bug | `type/bug` | 不具合。再現手順が必須 |
-| Task | `type/task` | DD から分解された実装単位、雑務 |
-| Spike | `type/spike` | 時間を区切った調査。**成果物は必ず文書** |
+| Design Doc | `type/design-doc` | Proposing and tracking a DD (links the doc's PR) |
+| Feature | `type/feature` | New functionality or improvement |
+| Bug | `type/bug` | A defect. Reproduction steps are mandatory |
+| Task | `type/task` | A unit decomposed from a DD, or chores |
+| Spike | `type/spike` | Time-boxed research. **The output is always a document** |
 
 ---
 
-## ラベル体系
+## Label taxonomy
 
-定義は [`.github/labels.yml`](../../.github/labels.yml)。
-`main` への push で [`labels.yml` ワークフロー](../../.github/workflows/labels.yml)が GitHub に同期する。
+Defined in [`.github/labels.yml`](../../.github/labels.yml) and synced to GitHub by the
+[`labels` workflow](../../.github/workflows/labels.yml) on push to `main`.
 
-### `type/*` — 何であるか（必須・1 つ）
+### `type/*` — what it is (required, exactly one)
 
 `design-doc` / `feature` / `bug` / `task` / `spike` / `chore` / `process`
 
-### `priority/*` — いつやるか（必須・1 つ）
+### `priority/*` — when (required, exactly one)
 
-| ラベル | 意味 | 期待される反応 |
+| Label | Meaning | Expected response |
 | --- | --- | --- |
-| `priority/p0` | 本番障害・データ損失・セキュリティ | 今すぐ。他を止める |
-| `priority/p1` | 現マイルストーンで必ずやる | 今スプリント |
-| `priority/p2` | やる。時期は未定 | バックログ上位 |
-| `priority/p3` | あればうれしい | いつか |
+| `priority/p0` | Production outage, data loss, security | Now. Stop other work |
+| `priority/p1` | Must land in the current milestone | This sprint |
+| `priority/p2` | Will happen. Timing undecided | Top of the backlog |
+| `priority/p3` | Nice to have | Someday |
 
-### `stage/*` — どのゲートにいるか（1 つ）
+### `stage/*` — which gate it is at (one)
 
 `g0-problem` / `g1-design` / `g2-build` / `g3-release`
 
-Projects の Status フィールドと対応させる（下記）。
+Mirrored by the Projects Status field (below).
 
-### `agent/*` — AI の自律可否（重要）
+### `agent/*` — AI autonomy (the important one)
 
-| ラベル | 意味 |
+| Label | Meaning |
 | --- | --- |
-| `agent/ready` | **AI が自律着手してよい。** 下の DoR を満たしたときだけ付ける |
-| `agent/wip` | AI が作業中。二重着手を防ぐ |
-| `agent/needs-human` | 人間の判断・作業が必要。AI は着手しない |
-| `agent/blocked` | 外部要因で停止中。理由をコメントに書く |
+| `agent/ready` | **AI may start autonomously.** Applied only when the DoR below is met |
+| `agent/wip` | AI is working on it. Prevents double-starting |
+| `agent/needs-human` | A human decision or action is required. AI does not start |
+| `agent/blocked` | Stopped by something external. Say why in a comment |
 
-**`agent/ready` の条件（Definition of Ready）**
+**Conditions for `agent/ready` (Definition of Ready)**
 
-1. 受け入れ条件が検証可能な形で書かれている
-2. 影響範囲（触るファイル・モジュール）が特定されている
-3. design doc が必要なら `approved` 済みで、Issue から参照されている
-4. 未解決の Decision Point が残っていない
+1. Acceptance criteria are written verifiably
+2. The affected surface (files, modules) is identified
+3. If a design doc is needed, it is `approved` and referenced from the Issue
+4. No unresolved Decision Point remains
 
-このラベルが、**AI の自律範囲を制御する唯一のスイッチ**である。安易に付けない。
+This label is **the single switch that controls AI autonomy**. Do not apply it casually,
+and **a human always applies it** — never the agent itself.
 
-### `risk/*` — 慎重さの度合い
+### `risk/*` — how careful to be
 
-`risk/high`（セキュリティ・課金・データ移行・不可逆操作）/ `risk/medium` / `risk/low`
+`risk/high` (security, billing, data migration, irreversible operations) / `risk/medium` / `risk/low`
 
-`risk/high` は **レビュア 2 名必須**、AI 単独でのマージ不可。
+`risk/high` requires **two reviewers**; AI may not merge it alone.
 
-### `size/*` — 見積もり（任意）
+### `size/*` — estimate (optional)
 
-`xs`(<2h) / `s`(<0.5d) / `m`(<2d) / `l`(<1w) / `xl`(要分割)
+`xs` (<2h) / `s` (<0.5d) / `m` (<2d) / `l` (<1w) / `xl` (must be split)
 
-`size/xl` は**分割されるまで `agent/ready` を付けてはならない**。
+**`size/xl` must never carry `agent/ready`** until it is split.
 
-### `area/*` — どこの話か（プロダクト固有）
+### `area/*` — which part of the product
 
-`area/docs` と `area/ci` のみ雛形として定義済み。
-プロダクトの構造が決まった時点で `.github/labels.yml` に追加する。
+Only `area/docs` and `area/ci` exist as placeholders. Add more to
+`.github/labels.yml` once the product's structure is settled.
 
 ---
 
-## Projects (v2) の設計
+## Projects (v2) design
 
-**プロジェクト名**: `windx Roadmap`（リポジトリ横断で 1 つ）
+**Project name**: `windx Roadmap` (one across the repository)
 
-### カスタムフィールド
+### Custom fields
 
-| フィールド | 型 | 値 | 用途 |
+| Field | Type | Values | Purpose |
 | --- | --- | --- | --- |
-| **Status** | 単一選択 | `Inbox` / `Triaged` / `Designing` / `Ready` / `In Progress` / `In Review` / `Done` / `Dropped` | 日々のかんばん |
-| **Stage** | 単一選択 | `G0` / `G1` / `G2` / `G3` | ゲート位置（`stage/*` ラベルと対応） |
-| **Target** | イテレーション | 2 週間 | いつ着手するか |
-| **Milestone** | （組み込み） | — | いつ出すか |
-| **Design Doc** | テキスト | `DD-0004` | 由来の doc |
-| **Confidence** | 単一選択 | `High` / `Medium` / `Low` | ロードマップの確度。**遠い予定ほど Low** |
-| **Size** | 単一選択 | `XS`〜`XL` | 見積もり |
+| **Status** | Single select | `Inbox` / `Triaged` / `Designing` / `Ready` / `In Progress` / `In Review` / `Done` / `Dropped` | Day-to-day kanban |
+| **Stage** | Single select | `G0` / `G1` / `G2` / `G3` | Gate position (mirrors `stage/*`) |
+| **Target** | Iteration | 2 weeks | When work starts |
+| **Milestone** | (built in) | — | When it ships |
+| **Design Doc** | Text | `DD-0004` | The originating doc |
+| **Confidence** | Single select | `High` / `Medium` / `Low` | Roadmap certainty. **Lower the further out** |
+| **Size** | Single select | `XS`–`XL` | Estimate |
 
-### ビュー
+### Views
 
-| ビュー名 | 種類 | 用途 |
+| View | Type | Purpose |
 | --- | --- | --- |
-| **Board** | Board（Status 別） | 日々の作業。`agent/wip` の可視化 |
-| **Roadmap** | Roadmap（Milestone 軸） | 対外・対内のロードマップ提示 |
-| **Triage** | Table（`Status = Inbox`） | G0 の判断待ち |
-| **Needs Decision** | Table（`agent/needs-human`） | **人間がやるべきことの一覧。ここが人間のタスクリスト** |
-| **Agent Queue** | Table（`agent/ready`、優先度順） | **AI が次に拾う Issue の一覧** |
+| **Board** | Board (by Status) | Daily work; shows `agent/wip` |
+| **Roadmap** | Roadmap (by Milestone) | The roadmap, internal and external |
+| **Triage** | Table (`Status = Inbox`) | Waiting on G0 |
+| **Needs Decision** | Table (`agent/needs-human`) | **Everything waiting on a human. This is the human's task list** |
+| **Agent Queue** | Table (`agent/ready`, by priority) | **The Issues AI picks up next** |
 
-最後の 2 つが本プロセスの要。
-**人間は Needs Decision を、AI は Agent Queue を見る。** 2 つのキューが分離していることが重要。
+The last two are the heart of this process.
+**Humans watch Needs Decision; AI watches Agent Queue.** Keeping the two queues separate
+is what makes the division of labour real.
 
-### 自動化（Projects の組み込みワークフロー）
+### Automation
 
-| トリガ | 動作 |
+Field and status synchronisation is **implemented as code**
+(see `DD-0001` DP-5 and DP-6): [`project-sync.yml`](../../.github/workflows/project-sync.yml)
+driving [`scripts/project_sync.py`](../../scripts/project_sync.py).
+
+| Trigger | Effect |
 | --- | --- |
-| Issue 作成 | Project に追加、`Status = Inbox` |
-| `agent/ready` 付与 | `Status = Ready` |
-| PR がその Issue を参照してオープン | `Status = In Review` |
-| Issue クローズ | `Status = Done` |
+| Issue opened | Added to the Project, `Status = Inbox` |
+| `agent/ready` applied | `Status = Ready` |
+| `agent/wip` applied | `Status = In Progress` |
+| A PR referencing the Issue opens | `Status = In Review` |
+| Issue closed | `Status = Done` (or `Dropped` if closed as not planned) |
+| `stage/*` applied | `Stage` field set to the matching gate |
+
+`GITHUB_TOKEN` cannot write to Projects v2, so the workflow needs a `PROJECTS_TOKEN`
+secret. Setup is in [09-setup-checklist.md](09-setup-checklist.md); the reasoning and the
+token matrix are in `DD-0001` Appendix A-3.
 
 ---
 
-## Milestone = ロードマップの時間軸
+## Milestones are the roadmap's time axis
 
-| 粒度 | 命名 | 意味 |
+| Grain | Naming | Meaning |
 | --- | --- | --- |
-| リリース | `v0.3.0` | 出荷単位。Release と 1:1 |
-| 期間 | `2026-Q4` | 四半期の到達目標 |
-| 特設 | `hardening-2026-10` | 横断的な取り組み |
+| Release | `v0.3.0` | Unit of shipping, 1:1 with a Release |
+| Period | `2026-Q4` | What the quarter achieves |
+| Special | `hardening-2026-10` | A cross-cutting effort |
 
-- **Milestone の説明欄に「この Milestone で何が達成されるか」を 3 文で書く。** 期日だけの Milestone は意味がない
-- 期日に入らない Issue は、**期日を延ばさず Milestone から外す**（スコープを削る）
-- Milestone クローズ = G3。Release を作り、リリースノートを AI が生成する
+- **Put three sentences in the Milestone description saying what it achieves.** A Milestone that is only a date means nothing
+- Work that will not fit does not move the date — **it leaves the Milestone** (cut scope)
+- Closing a Milestone is G3: cut a Release, and have AI generate the notes
 
-### 対外ロードマップ
+### The external roadmap
 
-Projects の Roadmap ビューを公開する。**Confidence を必ず併記する**。
+Publish the Projects roadmap view. **Always show Confidence.**
 
-> 遠い未来を `High` と表示することは、嘘をついていることと同じ。
-> 次の Milestone = `High`、その次 = `Medium`、それ以降 = `Low` を既定とする。
-
----
-
-## トレーサビリティ
-
-すべての作業は次の鎖でつながる。
-
-```
-ADR-xxxx  ←─ なぜそう決めたか
-   ↑
-DD-xxxx   ←─ どう作るか
-   ↑
-Issue #n  ←─ 何をやるか
-   ↑
-PR #m     ←─ 実際にやったこと（Closes #n）
-```
-
-守るべきリンク規約:
-
-- **Issue → DD**: DD 由来の Issue は本文に `Design doc: DD-xxxx` を書く
-- **PR → Issue**: PR 本文に `Closes #n` を書く（1 PR = 1 Issue）
-- **PR → DD**: DD 由来なら `Design doc: DD-xxxx` を書く
-- **DD → Issue**: doc の front matter `tracking_issue` に追跡 Issue 番号を書く
-- **DD → ADR**: 重要な決定は `related_adrs` に列挙
-
-CI（[`docs-lint.yml`](../../.github/workflows/docs-lint.yml)）が
-doc 側の front matter と索引の整合を検証する。
+> Showing a distant future as `High` is the same as lying.
+> Default: the next Milestone is `High`, the one after `Medium`, everything beyond `Low`.
 
 ---
 
-## トリアージ（週 1 回、30 分）
+## Traceability
 
-`Triage` ビュー（`Status = Inbox`）を上から処理する。1 件あたり 2 分以内で判断する。
+Every piece of work hangs off this chain.
 
-1. **重複か** → クローズしてリンク
-2. **やるか** → やらないなら `Dropped` にして**理由をコメント**（無言クローズ禁止）
-3. **`priority/*` を付ける**
-4. **DD が要るか** → 要るなら `type/design-doc` の Issue を作って `Stage = G1`
-5. **要らないなら** → 受け入れ条件を書き（AI に書かせてよい）、`agent/ready` を付ける
+```
+ADR-xxxx  ←─ why we decided it
+   ↑
+DD-xxxx   ←─ how we build it
+   ↑
+Issue #n  ←─ what we do
+   ↑
+PR #m     ←─ what we actually did (Closes #n)
+```
 
-迷って 2 分を超えたら `priority/p3` に置いて次へ進む。**トリアージで設計を始めない。**
+The link rules:
+
+- **Issue → DD**: an Issue from a DD carries `Design doc: DD-xxxx` in its body
+- **PR → Issue**: `Closes #n` in the PR body (1 PR = 1 Issue)
+- **PR → DD**: `Design doc: DD-xxxx` if it came from one
+- **DD → Issue**: the doc's front matter `tracking_issue`
+- **DD → ADR**: significant decisions listed in `related_adrs`
+
+CI enforces the doc side ([`docs-lint.yml`](../../.github/workflows/docs-lint.yml)) and the
+PR side ([`pr-checks.yml`](../../.github/workflows/pr-checks.yml)).
+
+---
+
+## Triage (30 minutes, once a week)
+
+Work the `Triage` view (`Status = Inbox`) from the top. Two minutes per item, maximum.
+
+1. **Duplicate?** Close it and link
+2. **Doing it?** If not, mark `Dropped` and **say why in a comment** (silent closes are banned)
+3. **Apply `priority/*`**
+4. **Needs a DD?** If so, open a `type/design-doc` Issue and set `Stage = G1`
+5. **If not**, write the acceptance criteria (AI may draft them) and apply `agent/ready`
+
+If an item takes longer than two minutes, drop it to `priority/p3` and move on.
+**Do not start designing during triage.**

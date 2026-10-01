@@ -1,48 +1,49 @@
-name: "Design Doc（設計文書）"
-description: "設計の合意が必要な変更。G1 ゲートの追跡 Issue になります"
+name: "Design Doc"
+description: "A change that needs design agreement. Becomes the G1 tracking Issue"
 title: "[DD] "
 labels: ["type/design-doc", "stage/g1-design", "agent/needs-human"]
 body:
   - type: markdown
     attributes:
       value: |
-        設計文書（DD）を書くための追跡 Issue です。
-        **doc 本体は `docs/design/DD-xxxx-*.md` として別 PR で提出します。**
+        The tracking Issue for writing a design doc (DD).
+        **The doc itself goes up as a separate PR, as `docs/design/DD-xxxx-*.md`.**
 
-        書き方: [`docs/process/03-design-doc.md`](https://github.com/eastasann/windx/blob/main/docs/process/03-design-doc.md)
-        生成: `python3 scripts/new_doc.py design "<タイトル>" --slug <english-slug>`
+        How to write it: [`docs/process/03-design-doc.md`](https://github.com/eastasann/windx/blob/main/docs/process/03-design-doc.md)
+        Scaffold it: `python3 scripts/new_doc.py design "<title>" --slug <english-slug>`
 
   - type: textarea
     id: problem
     attributes:
-      label: 解くべき問題
-      description: 何が問題で、誰が困っているか。解決策ではなく問題を書いてください。
+      label: The problem to solve
+      description: What is wrong, and who is hurting. Describe the problem, not the solution.
       placeholder: |
-        セッション検証の p99 レイテンシが 400ms あり、ログイン直後の画面表示が体感で遅い。
-        現行の実装は毎リクエストで DB を引いており、ピーク時に接続プールが枯渇している。
+        Session validation has a p99 of 400ms, so the screen after login feels slow.
+        The current implementation hits the database on every request and exhausts the
+        connection pool at peak.
     validations:
       required: true
 
   - type: textarea
     id: why-doc
     attributes:
-      label: なぜ design doc が必要か
-      description: 該当するものに印を付けてください（複数可）。ひとつも当てはまらないなら Feature/Task テンプレートを使ってください。
+      label: Why this needs a design doc
+      description: Check everything that applies. If none do, use the Feature or Task template instead.
       value: |
-        - [ ] 複数のコンポーネント／サービスにまたがる
-        - [ ] 公開 API・データスキーマ・永続データの形を変える
-        - [ ] 後から変更するコストが高い（移行が必要になる）
-        - [ ] 妥当な代替案が 2 つ以上あり、選択に判断が要る
-        - [ ] セキュリティ・プライバシー・課金・可用性に影響する
-        - [ ] 見積もりが 3 人日／3 セッションを超える
+        - [ ] Spans more than one component or service
+        - [ ] Changes a public API, a schema, or the shape of persisted data
+        - [ ] Expensive to change later (a migration would be needed)
+        - [ ] Two or more reasonable alternatives exist and picking one takes judgment
+        - [ ] Touches security, privacy, billing, or availability
+        - [ ] Estimated over 3 person-days / 3 sessions
     validations:
       required: true
 
   - type: input
     id: owner
     attributes:
-      label: Owner（この doc の最終責任者）
-      description: Decision Points に回答し、承認する人。**必ず 1 名**。
+      label: Owner (accountable for this doc)
+      description: The person who answers the Decision Points and approves. **Exactly one.**
       placeholder: "@eastasann"
     validations:
       required: true
@@ -50,8 +51,8 @@ body:
   - type: textarea
     id: scope
     attributes:
-      label: 想定スコープ / やらないこと
-      description: 現時点で分かっている範囲。doc の Non-Goals の下書きになります。
+      label: Expected scope / what is out of scope
+      description: What you know so far. This becomes the first draft of the doc's Non-Goals.
     validations:
       required: false
 
@@ -59,7 +60,7 @@ body:
     id: doc-link
     attributes:
       label: Design doc
-      description: doc を作成したら ID と PR を記入してください。
+      description: Fill in the ID and PR once the doc exists.
       placeholder: "DD-0004 / PR #12"
     validations:
       required: false

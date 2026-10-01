@@ -1,170 +1,172 @@
-# 06. エージェント実行プロトコル
+# 06. Agent execution protocol
 
-AI エージェント（Claude Code 等）が本リポジトリで作業するときの実行規約。
-エージェント自身が読む常時ルールは [`CLAUDE.md`](../../CLAUDE.md)。
-本文書はその**背景と設計意図**を説明する。
+How AI agents (Claude Code and similar) work in this repository.
+The standing rules the agent itself reads are in [`CLAUDE.md`](../../CLAUDE.md).
+This document explains the **reasoning behind them**.
 
 ---
 
-## 実行ループ
+## The execution loop
 
 ```
  ┌─────────┐   ┌────────┐   ┌────────┐   ┌───────────┐
  │ Explore │ → │ Design │ → │ Decide │ → │ Decompose │
  └─────────┘   └────────┘   └────────┘   └───────────┘
-   調査          doc起案       【人間】      Issue 分解
-                                  │
+   research      draft        [HUMAN]       into Issues
+                                 │
  ┌─────────┐   ┌────────┐   ┌────────┐      │
  │ Record  │ ← │ Verify │ ← │Implement│ ←────┘
  └─────────┘   └────────┘   └────────┘
-  doc/ADR更新    検証          実装
+  update        prove        build
+  doc/ADR
 ```
 
-### 1. Explore — 調査
+### 1. Explore — research
 
-**目的**: 設計に必要な事実を集める。**この段階で設計を書き始めない。**
+**Goal**: gather the facts the design needs. **Do not start writing the design here.**
 
-- 既存コードの該当箇所と、そこで使われているパターンを読む
-- 関連する過去の DD / ADR を読む（`docs/design/README.md`, `docs/adr/README.md`）
-- 関連 Issue・過去の PR を検索する（同じ議論が既にされていないか）
-- 再現が必要なら再現させる（バグの場合は**再現しない限り着手しない**）
+- Read the relevant existing code and the patterns in use there
+- Read related past DDs and ADRs (`docs/design/README.md`, `docs/adr/README.md`)
+- Search related Issues and past PRs — has this argument already happened?
+- Reproduce if reproduction matters (**for a bug, do not start until it reproduces**)
 
-**出力**: 調査メモ（Issue コメント、または doc の Context / Appendix 節）
+**Output**: research notes (an Issue comment, or the doc's Context / Appendix)
 
-### 2. Design — 起案
+### 2. Design — draft
 
-**目的**: 判断材料を揃えて人間に渡す。**結論を出すことではない。**
+**Goal**: assemble what a human needs to decide. **Not to reach the conclusion.**
 
-- design doc をドラフトする（`docs/templates/design-doc.md`）
-- **代替案を 2〜3 案**、実行可能なレベルで書く
-- 判断が必要な分岐を **Decision Points** として抽出する
-- 各 DP に **AI の推奨と根拠**、**覆すコスト**を書く
+- Draft the design doc (`docs/templates/design-doc.md`)
+- Write **two or three alternatives** at a workable level of detail
+- Extract the forks that need judgment as **Decision Points**
+- Give each one **your recommendation with reasoning**, and **the cost of reversal**
 
-**出力**: `status: in-review` の doc を含む PR
+**Output**: a PR containing the doc at `status: in-review`
 
-### 3. Decide — 人間の判断（AI は待つ）
+### 3. Decide — the human decides (AI waits)
 
-ここで**必ず止まる**。先回りして実装を始めない。
+**Stop here.** Do not get ahead of it and start building.
 
-- Owner が Decision Points に回答する
-- Agent は回答を doc に反映し、`**決定**: <案>（<理由>）` の形で追記する
-- Owner が `status: approved` にしてマージ → G1 通過
+- The Owner answers the Decision Points
+- The Agent reflects each answer in the doc as `**Decision**: <option> (<reason>)`
+- The Owner sets `status: approved` and merges — G1 cleared
 
-### 4. Decompose — 分解
+### 4. Decompose — break it down
 
-- doc の `Implementation Plan` を Issue 群に落とす
-- 各 Issue に**検証可能な受け入れ条件**を書く
-- 依存関係を Issue 本文に書く（`Depends on #n`）
-- DoR を満たすものにだけ `agent/ready` を付ける
+- Turn the doc's `Implementation Plan` into Issues
+- Give each Issue **verifiable acceptance criteria**
+- State dependencies in the body (`Depends on #n`)
+- **Do not apply `agent/ready` yourself.** Prepare the Issue so it meets the DoR, then ask
 
-### 5. Implement — 実装
+### 5. Implement — build
 
-- **1 PR = 1 Issue**。ブランチは `<type>/<issue番号>-<短い要約>`
-- doc の `Context for Agents` の制約を守る（触ってよい場所、踏襲パターン）
-- **範囲外に出そうになったら止まって聞く**。「ついでに直す」は禁止
-- 着手時に `agent/wip` を付け、完了時に外す
+- **1 PR = 1 Issue.** Branch name: `<type>/<issue-number>-<short-summary>`
+- Obey the doc's `Context for Agents` (where to touch, which patterns to follow)
+- **If the work wants to leave that scope, stop and ask.** "While I was here" is banned
+- Apply `agent/wip` when you start; remove it when you finish
 
-### 6. Verify — 検証
+### 6. Verify — prove it
 
-- 受け入れ条件ごとに、**検証コマンドと実行結果**を PR 本文に貼る
-- push 前にローカルで lint / typecheck / test を通す
-- CI が赤いなら**自分の仕事**。緑になるまで直す
+- For each acceptance criterion, paste **the command and its output** into the PR body
+- Run lint / typecheck / tests locally before pushing
+- If CI is red, **that is your job**. Fix it until it is green
 
-### 7. Record — 記録
+### 7. Record — write it down
 
-- doc を as-built に更新し、`status: implemented` にする
-- 実装中に確定した恒久的な判断があれば **ADR に昇格**させる
-- 次にやるべきことが見つかったら Issue を起こす（自分で勝手に実装しない）
+- Update the doc to as-built and set `status: implemented`
+- Promote any durable decision discovered during the build to an **ADR**
+- If you found more work, open an Issue — do not just implement it
 
 ---
 
-## セッション設計
+## Session design
 
-AI のコンテキストウィンドウは有限であり、長いセッションほど精度が落ちる。
-**ゲートとセッション境界を一致させる。**
+An AI's context window is finite, and accuracy drops as a session grows.
+**Align session boundaries with gates.**
 
-| セッション | 入力 | 出力 | 目安 |
+| Session | Input | Output | Budget |
 | --- | --- | --- | --- |
-| 調査セッション | Issue | 調査メモ | 1 セッション |
-| 設計セッション | Issue + 調査メモ | doc の PR | 1 セッション |
-| 実装セッション | **承認済み doc + 1 Issue** | 1 PR | 1〜2 セッション |
-| 修正セッション | PR + CI ログ / レビュー指摘 | 追加コミット | 短く |
+| Research | An Issue | Research notes | 1 session |
+| Design | Issue + notes | A doc PR | 1 session |
+| Implementation | **An approved doc + one Issue** | One PR | 1–2 sessions |
+| Fix-up | PR + CI logs / review comments | Extra commits | Short |
 
-**実装セッションに渡すべき入力は、doc と Issue だけで足りるようになっていること。**
-足りないなら、それは doc の欠陥である（`Context for Agents` を厚くする）。
+**An implementation session should need nothing beyond the doc and the Issue.**
+If it needs more, that is a defect in the doc — thicken `Context for Agents`.
 
-> セッションが長引いて迷走しているなら、粘らずに**一度捨てて、doc を直してからやり直す**。
-> コンテキストが汚れたセッションを立て直すより安い。
-
----
-
-## 自律の境界
-
-### AI が人間に確認せず進んでよいこと
-
-- 調査、再現、既存コードの読解
-- doc・Issue・PR の起草と整形
-- `agent/ready` が付いた Issue の実装
-- 自分の PR の CI 赤の修正
-- レビュー指摘のうち、小さく局所的なものへの対応
-- doc の as-built 更新（設計方針が変わらない範囲）
-
-### 必ず人間に聞くこと
-
-- **Decision Points の決定**
-- doc / Issue の範囲を超える変更
-- 依存ライブラリの追加・更新
-- 公開 API・データスキーマの変更
-- 不可逆な操作（データ削除、マイグレーション実行、リリース）
-- `risk/high` ラベルが付いた作業
-- 「この Issue は不要だと思う」という判断（**却下は人間の権限**）
-
-### 判断に迷ったときの既定
-
-> **聞く。** ただし「どうしますか」ではなく、**選択肢と推奨を添えて**聞く。
-> 丸投げの質問は、人間の判断コストを下げていない。
+> If a session is dragging and going in circles, do not push through.
+> **Throw it away, fix the doc, and start again.** That is cheaper than salvaging a
+> session with polluted context.
 
 ---
 
-## エージェント間の分担
+## The boundary of autonomy
 
-複数の AI セッションを並行させる場合:
+### Proceed without asking
 
-- **1 Issue = 1 セッション**。同じファイルを複数セッションが触らない
-- 着手時に `agent/wip` を付ける（二重着手の防止）
-- 依存がある Issue は直列に実行する（`Depends on #n` を守る）
-- レビュー用のセッションは、実装セッションとは**別に立てる**
-  （自分の書いたコードは自分ではレビューできない。これは人間も AI も同じ）
+- Research, reproduction, reading existing code
+- Drafting and shaping docs, Issues, PRs
+- Implementing an Issue that carries `agent/ready`
+- Fixing red CI on your own PR
+- Small, local review comments
+
+### Always ask
+
+- **Settling a Decision Point**
+- Any change beyond the doc's or Issue's scope
+- Adding or upgrading a dependency
+- Changing a public API or schema
+- Irreversible operations (deleting data, running a migration, releasing)
+- Anything labelled `risk/high`
+- "I think this Issue is unnecessary" — **rejection is a human power**
+
+### The default when unsure
+
+> **Ask.** But not "what should I do?" — ask **with options and a recommendation**.
+> A bare question has not reduced the human's cost of deciding.
 
 ---
 
-## プロンプト規約
+## Splitting work across agents
 
-エージェントに仕事を渡すときは、次の形に揃える。
+When running several AI sessions in parallel:
+
+- **1 Issue = 1 session.** Two sessions never touch the same files
+- Apply `agent/wip` on start, to prevent double-starting
+- Run dependent Issues serially (honour `Depends on #n`)
+- **Open a separate session for review.** You cannot review your own code —
+  that is as true for an AI as for a human
+
+---
+
+## Prompt convention
+
+Hand work to an agent in this shape.
 
 ```
-目的: <Issue へのリンク>
-参照: <DD へのリンク>（あれば）
-成果物: <PR / doc / 調査メモ>
-制約: <触ってよい場所、使ってよい依存>
-完了条件: <受け入れ条件と検証コマンド>
+Goal:        <link to the Issue>
+Reference:   <link to the DD>, if any
+Deliverable: <PR / doc / research notes>
+Constraints: <where you may touch, which dependencies you may use>
+Done when:   <acceptance criteria and the verifying commands>
 ```
 
-**リンクを渡し、内容を貼り付けない。** 貼り付けると原本と乖離し、
-どちらが正か分からなくなる。GitHub 上の原本を常に単一の真実とする。
+**Pass links, not pasted content.** Pasted content drifts from the original and nobody can
+tell which is authoritative. The copy in GitHub is always the single source of truth.
 
 ---
 
-## 失敗パターンと対処
+## Failure patterns and what to do
 
-| 症状 | 真因 | 対処 |
+| Symptom | Real cause | Fix |
 | --- | --- | --- |
-| 実装が設計とズレる | doc の `Context for Agents` が薄い | 制約を具体的に書く |
-| スコープが勝手に広がる | `Non-Goals` が空 | 「やらないこと」を明示する |
-| もっともらしいが動かないコード | 検証が甘い | AC に検証コマンドを必須化 |
-| 同じ指摘が毎回出る | 規約が暗黙知 | `CLAUDE.md` かリンタに落とす |
-| セッションが迷走する | Issue が大きすぎる | 半日〜2 日に分解する |
-| 人間がレビューで疲弊する | AC が曖昧で判断できない | AC を検証可能な形に直す |
-| 判断を AI が勝手にする | DP が抽出されていない | doc レビューで DP の有無を確認する |
+| The build drifts from the design | `Context for Agents` is thin | Write the constraints concretely |
+| Scope expands on its own | `Non-Goals` is empty | State what you are not doing |
+| Plausible code that does not run | Verification is weak | Require a command on every AC |
+| The same comment every time | The convention is tribal knowledge | Move it to `CLAUDE.md` or a linter |
+| Sessions go in circles | The Issue is too big | Split to half a day–two days |
+| Review exhausts the human | The ACs are too vague to judge | Rewrite them to be verifiable |
+| AI decides things on its own | Decision Points were never extracted | Check for them during doc review |
 
-**どの症状も、直すべきはプロンプトではなくプロセスの成果物（doc / Issue / CI）である。**
+**In every case, the thing to fix is a process artifact — the doc, the Issue, or CI —
+not the prompt.**

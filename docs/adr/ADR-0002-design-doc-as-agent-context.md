@@ -1,7 +1,7 @@
 ---
 id: ADR-0002
-title: "design doc を AI エージェントへのコンテキスト入力として構造化する"
-status: proposed
+title: "Design docs are structured as context input for AI agents"
+status: accepted
 date: 2026-09-22
 deciders: ["@eastasann"]
 related_docs: ["DD-0001"]
@@ -11,67 +11,68 @@ superseded_by: null
 
 ## Context
 
-Google の design doc は、人間の読者に向けた散文として書かれる。曖昧な設計は散文では
-書けない、という性質が品質の担保になっていた。
+Google's design docs are written as prose for human readers. The property that vague designs
+cannot survive prose was itself the quality mechanism.
 
-本プロジェクトでは実装の主体が AI エージェントになる。ここで design doc の読者が変わる。
-エージェントは実装のたびに doc を読み、それを最大の文脈として実装を組み立てる。
-実際に観測される劣化は次の 2 つで、いずれも doc の記述不足に起因する。
+In this project the implementer is an AI agent, which changes who reads the doc. The agent
+reads it on every implementation and assembles the work from it as its largest context. Two
+degradations are observable in practice, both caused by what the doc leaves out.
 
-1. **スコープクリープ** — 「やらないこと」が書かれていないため、周辺コードまで改変する
-2. **既存パターンの無視** — 参照すべき実装が示されていないため、独自の構造を発明する
+1. **Scope creep** — with no statement of what is out of scope, surrounding code gets modified
+2. **Ignored patterns** — with no reference implementation named, the agent invents its own structure
 
-同時に、doc の状態（誰の承認待ちか、どの Issue に対応するか）を機械的に扱いたいという
-要求がある。散文だけではこれができない。
+Separately, we want the doc's state — who it waits on, which Issue it corresponds to — to be
+handled mechanically. Prose alone cannot do that.
 
 ## Decision
 
-design doc を「散文の本体」と「機械可読な構造」の二層構成にする。
+A design doc has two layers: a prose body and a machine-readable structure.
 
-- **front matter を必須**とし、`id` / `status` / `owner` / `tracking_issue` などを
-  定型キーで持たせる。CI (`scripts/validate_docs.py`) が構造を検証する
-- Google 由来の節（Context / Goals / Non-Goals / Design / Alternatives /
-  Cross-cutting Concerns）は散文として維持する
-- エージェント向けに 2 節を追加する
-  - **`Context for Agents`**: 触ってよい場所、触ってはいけない場所、踏襲するパターン、
-    使ってよい依存、既知の落とし穴
-  - **`Acceptance Criteria`**: Given/When/Then と**検証コマンド**
+- **Front matter is mandatory**, carrying `id` / `status` / `owner` / `tracking_issue` and
+  similar fixed keys. CI (`scripts/validate_docs.py`) validates the structure
+- The sections inherited from Google — Context, Goals, Non-Goals, Design, Alternatives,
+  Cross-cutting Concerns — stay as prose
+- Two sections are added for agents
+  - **`Context for Agents`**: where it may and may not touch, patterns to follow, permitted
+    dependencies, known traps
+  - **`Acceptance Criteria`**: Given/When/Then plus **the verifying command**
 
-Non-Goals と Context for Agents は、人間向けの丁寧さではなく
-**エージェントの探索範囲を縛る実行時制約**として位置づける。
+Non-Goals and Context for Agents are positioned not as courtesy to a human reader but as
+**runtime constraints on the agent's search space**.
 
 ## Consequences
 
-### 良い結果
+### Good outcomes
 
-- エージェントに渡す入力が「doc へのリンク 1 本」で済み、プロンプトに文脈を貼らなくてよい
-- スコープ逸脱と既存パターン無視を、プロンプトではなく doc の品質で抑止できる
-- doc の状態を機械的に集計でき、CI で規約違反を検出できる
-- 検証コマンドが doc に書かれるため、「完了したか」が人間の主観から切り離される
+- Handing work to an agent needs one link, with no context pasted into the prompt
+- Scope deviation and ignored patterns are suppressed through doc quality rather than prompting
+- Doc state can be aggregated mechanically and violations caught in CI
+- Because the verifying command lives in the doc, "is it done" is decoupled from human opinion
 
-### 悪い結果 / 引き受けたコスト
+### Bad outcomes / costs accepted
 
-- **doc の執筆負担が増える。** Google 版より必須節が多く、形式の制約もある
-  （ただし執筆主体が AI なので、人間の負担増は限定的と見込む）
-- **形式検証が形骸化するリスク。** 「節を埋めること」が目的化し、中身が空疎になりうる。
-  検証できるのは構造だけで、内容の妥当性は人間のレビューに依存し続ける
-- **front matter のスキーマ変更が全 doc の一括修正を要求する**
-- **実装が変わるたびに doc の更新義務が発生する。** 怠ると、エージェントが
-  嘘を正しい前提として読むため、人間が古い doc を読む場合より害が大きい
+- **Writing a doc costs more.** There are more mandatory sections than in Google's version, and
+  formal constraints on top (though with an AI writing, the added human cost is limited)
+- **The structural validation risks becoming theatre.** Filling in sections can become the goal
+  and leave them hollow. Only structure is checkable; the soundness of the content still
+  depends on human review
+- **A front matter schema change forces a bulk edit of every doc**
+- **Every change to the implementation creates an obligation to update the doc.** Neglect it and
+  the agent reads a falsehood as a premise, which does more damage than when only humans read it
 
-### この決定を見直すべき兆候
+### Signals that this should be revisited
 
-- エージェントが `Context for Agents` を無視した実装を繰り返すようになったとき
-  （doc ではなくツール側の制約で縛るべき、という判断になる）
-- 節を埋めるだけの空疎な doc が過半を占めるようになったとき
-- モデルの文脈把握能力が向上し、リポジトリ全体から制約を自力で推論できるようになったとき
+- Agents repeatedly produce implementations that ignore `Context for Agents`
+  (the conclusion would be to constrain through tooling rather than the doc)
+- Hollow docs that merely fill sections become the majority
+- Model context capability improves enough to infer the constraints from the repository itself
 
 ## Alternatives Considered
 
-- **Google 版の design doc をそのまま使う**: 人間の合意形成には十分だが、状態の機械的追跡と
-  エージェントの制約という 2 つの要求を満たせない。
-- **doc は散文のまま、エージェント制約は `CLAUDE.md` に集約する**: 制約がリポジトリ全体で
-  共通のものはそれでよいが、「この変更では `src/billing/**` を触るな」のような
-  変更ごとの制約は表現できない。実際に必要なのは後者である。
-- **doc を構造化データ（YAML/JSON）として書く**: 機械可読性は最大化されるが、
-  「散文でしか検出できない曖昧さ」という design doc 文化の核を失う。
+- **Use Google's design doc as is**: sufficient for human agreement, but it cannot satisfy
+  mechanical state tracking or agent constraint.
+- **Keep docs as prose and put agent constraints in `CLAUDE.md`**: fine for constraints shared
+  across the whole repository, but it cannot express per-change constraints such as "do not
+  touch `src/billing/**` in this one" — which is exactly what is needed.
+- **Write docs as structured data (YAML/JSON)**: maximises machine readability but loses the
+  core of the design doc culture, the vagueness only prose can detect.

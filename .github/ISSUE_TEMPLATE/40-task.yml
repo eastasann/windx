@@ -1,19 +1,19 @@
-name: "Task（実装単位）"
-description: "design doc から分解された実装単位、または設計判断のない作業"
+name: "Task"
+description: "A unit decomposed from a design doc, or work with no design judgment"
 title: "[Task] "
 labels: ["type/task", "stage/g2-build"]
 body:
   - type: markdown
     attributes:
       value: |
-        **1 Issue = 1 つの検証可能な成果。** 目安は半日〜2 日（AI セッション 1〜3 回）。
-        大きすぎる場合は分割してください（`size/xl` は `agent/ready` を付けられません）。
+        **1 Issue = 1 verifiable outcome.** Aim for half a day to two days (1–3 AI sessions).
+        Split anything larger — `size/xl` may not carry `agent/ready`.
 
   - type: input
     id: design-doc
     attributes:
       label: Design doc
-      description: DD から分解した Task なら ID を記入。設計判断のない雑務なら「なし」。
+      description: The DD this was decomposed from. Write "none" for chores with no design judgment.
       placeholder: "DD-0004"
     validations:
       required: true
@@ -21,39 +21,39 @@ body:
   - type: textarea
     id: what
     attributes:
-      label: やること
-      description: 1〜3 文。「〜を実装する」と言い切れる粒度で。
+      label: What to do
+      description: One to three sentences, at a granularity where you can say "implement X".
     validations:
       required: true
 
   - type: textarea
     id: acceptance
     attributes:
-      label: 受け入れ条件
-      description: "**これが AI の完了判定になります。** 検証コマンドを必ず書いてください。"
+      label: Acceptance criteria
+      description: "**This is how the AI decides it is done.** Always include the verifying command."
       value: |
-        - **AC-1**: Given <前提>, When <操作>, Then <期待結果>
-          - 検証: `<コマンド>`
+        - **AC-1**: Given <precondition>, When <action>, Then <expected result>
+          - Verify: `<command>`
     validations:
       required: true
 
   - type: textarea
     id: scope
     attributes:
-      label: 影響範囲
-      description: 触るファイル・モジュール。**ここに書かれていない場所は触りません。**
+      label: Affected surface
+      description: Files and modules. **Anything not listed here will not be touched.**
       value: |
-        - 触ってよい場所:
-        - 触ってはいけない場所:
-        - 踏襲するパターン:
+        - May touch:
+        - Must not touch:
+        - Follow this pattern:
     validations:
       required: true
 
   - type: input
     id: depends
     attributes:
-      label: 依存
-      description: 先に完了している必要がある Issue。
+      label: Dependencies
+      description: Issues that must finish first.
       placeholder: "Depends on #12"
     validations:
       required: false
@@ -62,11 +62,11 @@ body:
     id: dor
     attributes:
       label: Definition of Ready
-      description: "**すべて満たしたときだけ** `agent/ready` を付けてください（付けるのは人間です）。"
+      description: "Apply `agent/ready` only when **all** of these hold — and a human applies it, never the agent."
       options:
-        - label: 解く問題が 1 文で書ける
-        - label: 受け入れ条件が検証可能な形で書かれている
-        - label: 影響範囲が特定されている
-        - label: design doc が必要なら `approved` 済みで、ここから参照されている
-        - label: 未解決の Decision Point がない
-        - label: "`size/xl` ではない"
+        - label: The problem fits in one sentence
+        - label: Acceptance criteria are written verifiably
+        - label: The affected surface is identified
+        - label: If a design doc is needed, it is `approved` and referenced here
+        - label: No unresolved Decision Point
+        - label: It is not `size/xl`

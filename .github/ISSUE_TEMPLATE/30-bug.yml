@@ -1,18 +1,18 @@
-name: "Bug（不具合）"
-description: "期待と異なる挙動の報告"
+name: "Bug"
+description: "Behaviour that differs from what is expected"
 title: "[Bug] "
 labels: ["type/bug", "stage/g0-problem"]
 body:
   - type: markdown
     attributes:
       value: |
-        **再現しない不具合には着手しません。** 再現手順を可能な限り具体的に書いてください。
-        修正は「先に失敗するテストを書いて再現させ、その後に直す」順序で行います。
+        **A bug that does not reproduce does not get worked on.** Be as specific as you can.
+        Fixes follow the order: write a failing test that reproduces it, then fix it.
 
   - type: textarea
     id: repro
     attributes:
-      label: 再現手順
+      label: Steps to reproduce
       value: |
         1.
         2.
@@ -23,42 +23,42 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: 期待する挙動
+      label: Expected behaviour
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: 実際の挙動
-      description: エラーメッセージ・ログ・スタックトレースがあれば貼ってください（**秘密情報は伏せること**）。
+      label: Actual behaviour
+      description: Include the error, logs, or stack trace if you have them (**redact any secrets**).
     validations:
       required: true
 
   - type: dropdown
     id: severity
     attributes:
-      label: 影響度
+      label: Severity
       options:
-        - "P0: 本番障害・データ損失・セキュリティ（今すぐ）"
-        - "P1: 主要機能が使えない（現マイルストーン）"
-        - "P2: 回避策がある"
-        - "P3: 軽微"
+        - "P0: production outage, data loss, security (now)"
+        - "P1: a core feature is unusable (current milestone)"
+        - "P2: a workaround exists"
+        - "P3: minor"
     validations:
       required: true
 
   - type: input
     id: env
     attributes:
-      label: 発生環境
-      placeholder: "本番 / ステージング / ローカル、バージョン、ブラウザ等"
+      label: Where it happened
+      placeholder: "production / staging / local, version, browser, …"
     validations:
       required: false
 
   - type: textarea
     id: scope
     attributes:
-      label: 影響範囲（分かれば）
-      description: 疑わしいファイル・モジュール。調査は AI が行うので、推測で構いません。
+      label: Suspected surface (if known)
+      description: Files or modules you suspect. An AI will do the investigation, so a guess is fine.
     validations:
       required: false
